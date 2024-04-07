@@ -1,0 +1,3 @@
+[submodule "external/CPAM"]
+	path = external/CPAM
+	url = git@github.com:ParAlg/CPAM.git
