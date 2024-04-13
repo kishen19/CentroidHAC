@@ -50,39 +50,29 @@ using uint = unsigned int;
 
 //file order: {base, query, graph, groundtruth, graph_outfile, res_file}
 template<typename PointRange, typename GraphType>
-void timeCentroid(parlay::sequence<char*> files, long k, BuildParams &BP, size_t n){
+void Centroid_main(parlay::sequence<char*> files, long k, BuildParams &BP, bool test){
   using indexType = typename GraphType::iT;
   using Point = typename PointRange::pT;
 
-  //load GT
-  // groundTruth<indexType> GT = groundTruth<indexType>(files[3]);
+  //load points (filename, bool: double the size)
+  PointRange Points = PointRange(files[0], test);
+  size_t n = Points.size();
 
   //load graph
-  char* gFile = files[2];
   long maxDeg = BP.max_degree();
-  bool graph_built = (gFile != NULL);
+  bool graph_built = (files[2] != NULL);
+  std::cout << graph_built << std::endl;
   GraphType Graph;
-  if(gFile == NULL) Graph = GraphType(maxDeg, n);
-  else Graph = GraphType(gFile);
-
-  //load point ranges
-  PointRange Points = PointRange(files[0],true);
-  // PointRange Query_Points = PointRange(files[1]);
-
-  time_loop(1, 0,
-    [&] () {},
-    [&] () {
-      Centroid<Point, PointRange, indexType, GraphType>(Graph, k, BP, files[4], graph_built, Points);
-    },
-    [&] () {});
-
-  if(files[5] != NULL) {
-    Graph.save(files[5]);
+  if(graph_built){
+    std::cout << "Loading Graph..." << std::endl;
+    Graph = GraphType(files[2]);
+  } else{
+    std::cout << "Building Graph..." << std::endl;
+    Graph = GraphType(maxDeg, n);
   }
-
+  std::cout << "Centroid..." << std::endl;
+  Centroid<Point, PointRange, indexType, GraphType>(Graph, k, BP, files[4], graph_built, Points);
 }
-
-
 
 int main(int argc, char* argv[]) {
     commandLine P(argc,argv,
@@ -92,6 +82,7 @@ int main(int argc, char* argv[]) {
         "[-memory_flag <algoOpt>] [-mst_deg <q>] [num_clusters <nc>] [cluster_size <cs>]"
         "[-data_type <tp>] [-dist_func <df>][-base_path <b>] <inFile>");
 
+  // Get all input params
   char* iFile = P.getOptionValue("-base_path");
   char* oFile = P.getOptionValue("-graph_outfile");
   char* gFile = P.getOptionValue("-graph_path");
@@ -99,10 +90,12 @@ int main(int argc, char* argv[]) {
   char* cFile = P.getOptionValue("-gt_path");
   char* rFile = P.getOptionValue("-res_path");
   char* vectype = P.getOptionValue("-data_type");
+  std::string tp = std::string(vectype);
   long R = P.getOptionIntValue("-R", 0);
   if(R<0) P.badArgument();
   long L = P.getOptionIntValue("-L", 0);
   if(L<0) P.badArgument();
+
   long MST_deg = P.getOptionIntValue("-mst_deg", 0);
   if(MST_deg < 0) P.badArgument();
   long num_clusters = P.getOptionIntValue("-num_clusters", 0);
@@ -118,103 +111,89 @@ int main(int argc, char* argv[]) {
   double delta = P.getOptionDoubleValue("-delta", 0);
   if(delta<0) P.badArgument();
   char* dfc = P.getOptionValue("-dist_func");
-  char* gt = P.getOptionValue("-graph_type");
-
   std::string df = std::string(dfc);
-  std::string tp = std::string(vectype);
-
-  BuildParams BP = BuildParams(R, L, alpha, pass, num_clusters, cluster_size, MST_deg, delta);
-  long maxDeg = BP.max_degree();
+  char* gt = P.getOptionValue("-graph_type");
+  std::string graph_type = std::string(gt);
+  bool test = (P.getOptionIntValue("-test", 0)==1);
 
   if((tp != "uint8") && (tp != "int8") && (tp != "float")){
     std::cout << "Error: vector type not specified correctly, specify int8, uint8, or float" << std::endl;
     abort();
   }
-
   if(df != "Euclidian" && df != "mips"){
     std::cout << "Error: specify distance type Euclidian or mips" << std::endl;
     abort();
   }
-
-  std::string graph_type;
-  if(gt == nullptr) graph_type = "flat";
-  else graph_type = std::string(gt);
   if(graph_type != "flat" && graph_type != "aspen" && graph_type != "aspen_flat"){
     std::cout << "Error: specify graph type flat or aspen or aspen_flat" << std::endl;
     abort();
   }
 
-
-  //read the number of points in order to prepare graph 
-  std::ifstream reader(iFile);
-  assert(reader.is_open());
-  unsigned int num_points;
-  reader.read((char*)(&num_points), sizeof(unsigned int));
-  reader.close();
-
+  BuildParams BP = BuildParams(R, L, alpha, pass, num_clusters, cluster_size, MST_deg, delta);
+  long maxDeg = BP.max_degree();
   parlay::sequence<char*> files = {iFile, qFile, gFile, cFile, oFile, rFile};
 
+  std::cout << "Starting..." << std::endl;
   if(graph_type == "flat"){
     if(tp == "float"){
       if(df == "Euclidian"){
-        timeCentroid<PointRange<float, Euclidian_Point<float>>, Flat_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<float, Euclidian_Point<float>>, Flat_Graph<uint>>(files, k, BP, test);
       } else if(df == "mips"){
-        timeCentroid<PointRange<float, Mips_Point<float>>, Flat_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<float, Mips_Point<float>>, Flat_Graph<uint>>(files, k, BP, test);
       }
     } else if(tp == "uint8"){
       if(df == "Euclidian"){
-        timeCentroid<PointRange<uint8_t, Euclidian_Point<uint8_t>>, Flat_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<uint8_t, Euclidian_Point<uint8_t>>, Flat_Graph<uint>>(files, k, BP, test);
       } else if(df == "mips"){
-        timeCentroid<PointRange<uint8_t, Mips_Point<uint8_t>>, Flat_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<uint8_t, Mips_Point<uint8_t>>, Flat_Graph<uint>>(files, k, BP, test);
       }
     } else if(tp == "int8"){
       if(df == "Euclidian"){
-        timeCentroid<PointRange<int8_t, Euclidian_Point<int8_t>>, Flat_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<int8_t, Euclidian_Point<int8_t>>, Flat_Graph<uint>>(files, k, BP, test);
       } else if(df == "mips"){
-        timeCentroid<PointRange<int8_t, Mips_Point<int8_t>>, Flat_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<int8_t, Mips_Point<int8_t>>, Flat_Graph<uint>>(files, k, BP, test);
       }
     }
   } else if(graph_type == "aspen"){
     if(tp == "float"){
       if(df == "Euclidian"){
-        timeCentroid<PointRange<float, Euclidian_Point<float>>, Aspen_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<float, Euclidian_Point<float>>, Aspen_Graph<uint>>(files, k, BP, test);
       } else if(df == "mips"){
-        timeCentroid<PointRange<float, Mips_Point<float>>, Aspen_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<float, Mips_Point<float>>, Aspen_Graph<uint>>(files, k, BP, test);
       }
     } else if(tp == "uint8"){
       if(df == "Euclidian"){
-        timeCentroid<PointRange<uint8_t, Euclidian_Point<uint8_t>>, Aspen_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<uint8_t, Euclidian_Point<uint8_t>>, Aspen_Graph<uint>>(files, k, BP, test);
       } else if(df == "mips"){
-        timeCentroid<PointRange<uint8_t, Mips_Point<uint8_t>>, Aspen_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<uint8_t, Mips_Point<uint8_t>>, Aspen_Graph<uint>>(files, k, BP, test);
       }
     } else if(tp == "int8"){
       if(df == "Euclidian"){
-        timeCentroid<PointRange<int8_t, Euclidian_Point<int8_t>>, Aspen_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<int8_t, Euclidian_Point<int8_t>>, Aspen_Graph<uint>>(files, k, BP, test);
       } else if(df == "mips"){
-        timeCentroid<PointRange<int8_t, Mips_Point<int8_t>>, Aspen_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<int8_t, Mips_Point<int8_t>>, Aspen_Graph<uint>>(files, k, BP, test);
       }
     }
   } else if(graph_type == "aspen_flat"){
     if(tp == "float"){
       if(df == "Euclidian"){
-        timeCentroid<PointRange<float, Euclidian_Point<float>>, Aspen_Flat_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<float, Euclidian_Point<float>>, Aspen_Flat_Graph<uint>>(files, k, BP, test);
       } else if(df == "mips"){
-        timeCentroid<PointRange<float, Mips_Point<float>>, Aspen_Flat_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<float, Mips_Point<float>>, Aspen_Flat_Graph<uint>>(files, k, BP, test);
       }
     } else if(tp == "uint8"){
       if(df == "Euclidian"){
-        timeCentroid<PointRange<uint8_t, Euclidian_Point<uint8_t>>, Aspen_Flat_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<uint8_t, Euclidian_Point<uint8_t>>, Aspen_Flat_Graph<uint>>(files, k, BP, test);
       } else if(df == "mips"){
-        timeCentroid<PointRange<uint8_t, Mips_Point<uint8_t>>, Aspen_Flat_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<uint8_t, Mips_Point<uint8_t>>, Aspen_Flat_Graph<uint>>(files, k, BP, test);
       }
     } else if(tp == "int8"){
       if(df == "Euclidian"){
-        timeCentroid<PointRange<int8_t, Euclidian_Point<int8_t>>, Aspen_Flat_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<int8_t, Euclidian_Point<int8_t>>, Aspen_Flat_Graph<uint>>(files, k, BP, test);
       } else if(df == "mips"){
-        timeCentroid<PointRange<int8_t, Mips_Point<int8_t>>, Aspen_Flat_Graph<uint>>(files, k, BP, num_points);
+        Centroid_main<PointRange<int8_t, Mips_Point<int8_t>>, Aspen_Flat_Graph<uint>>(files, k, BP, test);
       }
     }
   }
-  
-  
+  return 0;
 }

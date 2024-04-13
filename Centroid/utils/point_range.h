@@ -55,15 +55,27 @@ struct PointRange{
 
   PointRange() : values(std::shared_ptr<T[]>(nullptr, std::free)) {n=0;}
 
-  PointRange(char* filename, bool doubl = false) : values(std::shared_ptr<T[]>(nullptr, std::free)){
-      if(filename == NULL) {
-        n = 0;
-        dims = 0;
-        return;
+  PointRange(char* filename, bool test = false) : values(std::shared_ptr<T[]>(nullptr, std::free)){
+    if(filename == NULL) {
+      n = 0;
+      dims = 0;
+      return;
+    }
+    std::ifstream reader(filename);
+    assert(reader.is_open());
+    if (test) {
+      reader >> n;
+      reader >> dims;
+      aligned_dims =  dims;
+      values = std::shared_ptr<T[]>((T*) aligned_alloc(64, n*aligned_dims*sizeof(T)), std::free);
+      for (size_t i=0; i<n; i++){
+        T* data = new T[dims];
+        for (size_t j=0; j<dims; j++){
+          reader >> data[j];
+        }
+        std::memmove(values.get() + i*aligned_dims, data, dims*sizeof(T));
       }
-      std::ifstream reader(filename);
-      assert(reader.is_open());
-
+    } else{
       //read num points and max degree
       unsigned int num_points;
       unsigned int d;
@@ -74,7 +86,7 @@ struct PointRange{
       std::cout << "Detected " << num_points << " points with dimension " << d << std::endl;
       aligned_dims =  dim_round_up(dims, sizeof(T));
       if(aligned_dims != dims) std::cout << "Aligning dimension to " << aligned_dims << std::endl;
-      values = std::shared_ptr<T[]>((T*) aligned_alloc(64, ((doubl)?2:1)*n*aligned_dims*sizeof(T)), std::free);
+      values = std::shared_ptr<T[]>((T*) aligned_alloc(64, n*aligned_dims*sizeof(T)), std::free);
       size_t BLOCK_SIZE = 1000000;
       size_t index = 0;
       while(index < n){
@@ -91,6 +103,7 @@ struct PointRange{
           delete[] data_start;
           index = ceiling;
       }
+    }
   }
 
   size_t size() { return n; }

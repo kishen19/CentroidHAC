@@ -17,6 +17,7 @@ cc_library(
         "//Centroid/utils:aspen_graph",
         "//Centroid/utils:aspen_flat_graph",
         "//Centroid/common:index",
+        "//Centroid/common:union_find",
     ],
 )
 

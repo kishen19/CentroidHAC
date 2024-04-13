@@ -66,10 +66,10 @@ struct knn_index {
   parlay::sequence<indexType> robustPrune(indexType p, parlay::sequence<pid>& cand,
                     GraphI &G, PR &Points, double alpha, bool add = true) {
     // add out neighbors of p to the candidate set.
+    size_t out_size = G[p].size();
     std::vector<pid> candidates;
     for (auto x : cand) candidates.push_back(x);
 
-    // std::cout << "adding neighbors of candidate: " << p << std::endl;
     if(add){
       for (indexType i : G[p].neighbors()) {
         candidates.push_back(std::make_pair(i, Points[i].distance(Points[p])));
@@ -145,19 +145,20 @@ struct knn_index {
     parlay::sequence<std::pair<indexType, parlay::sequence<indexType>>> update = {std::make_pair(start_point, nbh)};
     G.batch_update(update);
     start_set = true;
-    std::cout << std::endl;
+    std::cout << "Start is Set" << std::endl;
   }
 
   void build_index(GraphType &Graph, PR &Points, stats<indexType> &BuildStats){
     std::cout << "Building graph..." << std::endl;
-    
-    parlay::sequence<indexType> inserts = parlay::tabulate(Points.size(), [&] (size_t i){
-					    return static_cast<indexType>(i);});
     GraphI G = Graph.Get_Graph();
     if(!start_set) set_start(G);
-    if(BP.two_pass) batch_insert(inserts, G, Points, BuildStats, 1.0, true, true, true, 2, .02);
+    parlay::sequence<indexType> inserts = parlay::tabulate(Points.size(), [&] (size_t i){
+					    return static_cast<indexType>(i);});
+    if(BP.two_pass){
+      batch_insert(inserts, G, Points, BuildStats, 1.0, true, true, true, 2, .02);
+    }
     batch_insert(inserts, G, Points, BuildStats, BP.alpha, true, true, false, 2, .02);
-     parlay::parallel_for (0, G.size(), [&] (long i) {
+    parlay::parallel_for (0, G.size(), [&] (long i) {
       auto sort = [&] (indexType* begin, indexType* end){
         auto less = [&] (indexType j, indexType k){
           return Points[i].distance(Points[j]) < Points[i].distance(Points[k]);
@@ -167,7 +168,7 @@ struct knn_index {
     });
     Graph.Update_Graph(std::move(G));
   }
-
+//TODO
   void insert(GraphType &Graph, PR &Points, stats<indexType> &BuildStats, parlay::sequence<indexType> inserts){
     std::cout << "Inserting points " << std::endl;
     GraphI G = Graph.Get_Graph();

@@ -38,33 +38,36 @@
 #include "Centroid/utils/aspen_graph.h"
 #include "Centroid/utils/aspen_flat_graph.h"
 #include "Centroid/common/index.h"
+#include "Centroid/common/union_find.h"
 
 
 template<typename Point, typename PointRange, typename indexType, typename GraphType>
 void Centroid(GraphType &Graph, long k, BuildParams &BP,
-         char *res_file,
+         char *ofile,
          bool graph_built, PointRange &Points) {
-  std::cout << "Size of dataset: " << Points.size() << std::endl;
   using findex = knn_index<Point, PointRange, indexType, GraphType>;
   using distanceType = typename Point::distanceType;
-  
+  // parlay::internal::timer t("Centroid");
+
   // Build Index
-  parlay::internal::timer t("Centroid");
+  std::cout << "Building Index" << std::endl;
   size_t n = Points.size();
   findex I(BP);
-  double idx_time;
   stats<unsigned int> BuildStats(Points.size());
-  if(graph_built){
-    idx_time = 0;
-  } else{
+  if(!graph_built){
     I.build_index(Graph, Points, BuildStats);
-    idx_time = t.next_time();
+    if (ofile != nullptr) Graph.save(ofile);
   }
-  indexType start_point = I.get_start();
+  std::cout << "Index Built" << std::endl;
+
+  // Init UF and other stuff
+  auto uf = union_find<indexType>(n);
 
   // Init Priority Queue
   using kv = std::tuple<distanceType,indexType,indexType>;
   auto G = Graph.Get_Graph_Read_Only();
+  I.set_start(G);
+  indexType start_point = I.get_start();
   QueryParams QP((long) 2, BP.L,  (double) 0.0, (long) Points.size(), (long) G.max_degree());
   auto h = parlay::sequence<kv>::from_function(n,[&](size_t i){
     auto out = beam_search(Points[i], G, Points, start_point, QP);
@@ -84,6 +87,7 @@ void Centroid(GraphType &Graph, long k, BuildParams &BP,
   std::priority_queue<kv, vector<kv>, std::greater<kv>> H(h.begin(), h.end());
   std::cout << "Heap Init Done" << std::endl;
 
+  /*
   // Centroid Process
   std::cout << "Starting Centroid Process" << std::endl;
   kv cand = H.top();
@@ -136,5 +140,5 @@ void Centroid(GraphType &Graph, long k, BuildParams &BP,
   // Graph_ G_(name, params, G_size, avg_deg, max_deg, 0.0);
   // G_.print();
   // if(Query_Points.size() != 0) search_and_parse<Point, PointRange, indexType>(G_, Graph, Points, Query_Points, GT, res_file, k, false, start_point);
-
+*/
 }

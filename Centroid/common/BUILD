@@ -15,6 +15,14 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "union_find",
+    hdrs = ["union_find.h"],
+    deps = [
+        "@parlaylib//parlay:primitives",
+    ],
+)
+
 package(
     default_visibility = ["//visibility:public"],
 )
