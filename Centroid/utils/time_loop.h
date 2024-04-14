@@ -1,5 +1,3 @@
-#pragma once
-
 #include "get_time.h"
 
 #ifndef TIMELOOP

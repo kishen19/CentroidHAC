@@ -2,14 +2,11 @@
 // Created by 付聪 on 2017/6/21.
 //
 
-#pragma once
-
 #ifndef EFANNA2E_DISTANCE_H
 #define EFANNA2E_DISTANCE_H
 
 #include <math.h>
 #include <x86intrin.h>
-
 #include <algorithm>
 #include <iostream>
 #include <type_traits>

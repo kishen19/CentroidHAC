@@ -35,28 +35,26 @@
 #include "Centroid/utils/stats.h"
 #include "Centroid/utils/types.h"
 #include "Centroid/utils/graph.h"
-#include "Centroid/utils/aspen_graph.h"
-#include "Centroid/utils/aspen_flat_graph.h"
 #include "Centroid/common/index.h"
 #include "Centroid/common/union_find.h"
 
 
-template<typename Point, typename PointRange, typename indexType, typename GraphType>
-void Centroid(GraphType &Graph, long k, BuildParams &BP,
+template<typename Point, typename PointRange, typename indexType>
+void Centroid(Graph<indexType> &G, long k, BuildParams &BP,
          char *ofile,
          bool graph_built, PointRange &Points) {
-  using findex = knn_index<Point, PointRange, indexType, GraphType>;
+  using findex = knn_index<Point, PointRange, indexType>;
   using distanceType = typename Point::distanceType;
   // parlay::internal::timer t("Centroid");
 
   // Build Index
   std::cout << "Building Index" << std::endl;
-  size_t n = Points.size();
+  size_t n = G.size();
   findex I(BP);
-  stats<unsigned int> BuildStats(Points.size());
+  stats<unsigned int> BuildStats(n);
   if(!graph_built){
-    I.build_index(Graph, Points, BuildStats);
-    if (ofile != nullptr) Graph.save(ofile);
+    I.build_index(G, Points, BuildStats);
+    if (ofile != nullptr) G.save(ofile);
   }
   std::cout << "Index Built" << std::endl;
 
@@ -65,14 +63,13 @@ void Centroid(GraphType &Graph, long k, BuildParams &BP,
 
   // Init Priority Queue
   using kv = std::tuple<distanceType,indexType,indexType>;
-  auto G = Graph.Get_Graph_Read_Only();
-  I.set_start(G);
+  I.set_start();
   indexType start_point = I.get_start();
-  QueryParams QP((long) 2, BP.L,  (double) 0.0, (long) Points.size(), (long) G.max_degree());
+  QueryParams QP((long) 2, BP.L,  (double) 1.00, (long) Points.size(), (long) G.max_degree());
   auto h = parlay::sequence<kv>::from_function(n,[&](size_t i){
     auto out = beam_search(Points[i], G, Points, start_point, QP);
     if (i<10){
-      std::cout << i << " " << out.first.first.size() << std::endl;
+      std::cout << i << " " << out.first.first[0].first << " - " << out.first.first[0].second << ", " << out.first.first[1].first << " - " << out.first.first[1].second << std::endl;
     }
     if (out.first.first[0].first!=i){
       return std::make_tuple(out.first.first[0].second,i,out.first.first[0].first);
@@ -80,65 +77,46 @@ void Centroid(GraphType &Graph, long k, BuildParams &BP,
       return std::make_tuple(out.first.first[1].second,i,out.first.first[1].first);
     }
   });
-  Graph.Release_Graph(std::move(G));
   for (int i=0; i<10; i++){
     std::cout << std::get<0>(h[i]) << " " << std::get<1>(h[i]) << " " << std::get<2>(h[i]) << std::endl;
   }
-  std::priority_queue<kv, vector<kv>, std::greater<kv>> H(h.begin(), h.end());
+  std::priority_queue<kv, std::vector<kv>, std::greater<kv>> H(h.begin(), h.end());
   std::cout << "Heap Init Done" << std::endl;
 
-  /*
   // Centroid Process
   std::cout << "Starting Centroid Process" << std::endl;
-  kv cand = H.top();
-  H.pop();
-  auto u = std::get<1>(cand);
-  auto v = std::get<2>(cand);
-  std::cout << "u: " << u << ", v: " << v << ", dist: " << std::get<0>(cand) << std::endl;
-  auto p1 = Points[u];
-  auto p2 = Points[v];
-  auto c = p1.centroid(p2,n);
-  std::cout << "Computed Centroid" << std::endl;
-  Points.add_point(c);
-  parlay::sequence<indexType> deletes = {u,v};
-  std::cout << "Starting Deletion" << std::endl;
-  I.lazy_delete(deletes);
-  I.start_delete_epoch();
-  I.consolidate(Graph, Points);
-  I.end_delete_epoch(Graph);
-  std::cout << "Finished deleting" << std::endl;
-  parlay::sequence<indexType> inserts = {(indexType) n};
-  I.insert(Graph, Points, BuildStats, inserts);
-  std::cout << "Inserted Centroid" << std::endl;
-  n++;
-
-  // size_t DEL_THRESH = n/20;
-  // size_t cur_dels = 0;
-  // for(int i=0; i<n-1; i++){
-  //   parlay::sequence<indexType> indices = parlay::tabulate(s, [&] (size_t j){return static_cast<indexType>(i*s+j);});
-  //   I.lazy_delete(indices);
-  //   I.start_delete_epoch();
-  //   I.consolidate(Graph, Points);
-  //   I.end_delete_epoch(Graph);
-  //   std::cout << "Finished deleting" << std::endl;
-  //   I.insert(Graph, Points, BuildStats, indices);
-  //   std::cout << "Finished re-inserting" << std::endl;
-  // }
-
-  // indexType start_point = I.get_start();
-  // std::string name = "Vamana";
-  // std::string params =
-  //     "R = " + std::to_string(BP.R) + ", L = " + std::to_string(BP.L);
-
-  // auto G = Graph.Get_Graph_Read_Only();
-  // auto [avg_deg, max_deg] = graph_stats_(G);
-  // size_t G_size = G.size();
-  // Graph.Release_Graph(std::move(G));
-  // auto vv = BuildStats.visited_stats();
-  // std::cout << "Average visited: " << vv[0] << ", Tail visited: " << vv[1]
-  //           << std::endl;
-  // Graph_ G_(name, params, G_size, avg_deg, max_deg, 0.0);
-  // G_.print();
-  // if(Query_Points.size() != 0) search_and_parse<Point, PointRange, indexType>(G_, Graph, Points, Query_Points, GT, res_file, k, false, start_point);
-*/
+  size_t rem = n;
+  indexType u,v,u_orig,v_orig;
+  distanceType dist;
+  distanceType total_dist = 0;
+  while (rem > 1){
+    kv best = H.top();
+    H.pop();
+    u_orig = std::get<1>(best);
+    v_orig = std::get<2>(best);
+    std::cout << "u: " << u_orig << ", v: " << v_orig << ", dist: " << dist << std::endl;
+    u = uf.find_compress(u_orig);
+    v = uf.find_compress(v_orig);
+    if (u == v || u!=u_orig || v!=v_orig){
+      continue;
+    } else {
+      auto out = beam_search(Points[u], G, Points, I.get_start(), QP);
+      std::pair<indexType,distanceType> cur_best;
+      if (out.first.first[0].first != u){
+        cur_best = out.first.first[0];
+      } else{
+        cur_best = out.first.first[1];
+      }
+      if (cur_best.second < dist){ // cur point is not nearest TODO: use a multiplier eps
+        H.push(std::make_tuple(cur_best.second, u, cur_best.first));
+      } else{
+        auto w = uf.unite(u,v);
+        Points[w].centroid(Points[w^u^v]); // Update u (or v) to the centroid
+        total_dist += dist;
+        rem--;
+      }
+    }
+  }
+  std::cout << "Centroid Process Done" << std::endl;
+  std::cout << "Total Distance: " << total_dist << std::endl;
 }

@@ -23,7 +23,6 @@
 // source: https://gist.github.com/rudolfovich/f250900f1a833e715260a66c87369d15
 
 #pragma once
-
 #include <fstream>
 #include <iostream>
 #include <sstream>

@@ -107,14 +107,11 @@ struct PointRange{
   }
 
   size_t size() { return n; }
+
+  unsigned int get_dims() const { return dims; }
   
   Point operator [] (long i) {
     return Point(values.get()+i*aligned_dims, dims, aligned_dims, i);
-  }
-
-  void add_point(Point p){
-    std::memmove(values.get() + n*aligned_dims, p.get_values(), dims*sizeof(T));
-    n++;
   }
 
 private:

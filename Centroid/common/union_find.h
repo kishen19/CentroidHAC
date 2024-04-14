@@ -12,7 +12,7 @@ struct union_find {
 
   indexType find_compress(indexType i) {
     indexType j = i;
-    if (parents[j] == j) return {j, 1};
+    if (parents[j] == j) return j;
     do {
       j = parents[j];
     } while (parents[j] != j);

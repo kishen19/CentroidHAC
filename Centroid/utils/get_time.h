@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 
-namespace parlayann{
+namespace cpam {
 
 struct timer {
   double total_time;
@@ -82,4 +82,4 @@ struct timer {
   }
 };
 
-} //namespace parlayann
+}  // namespace cpam

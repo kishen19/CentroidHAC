@@ -36,11 +36,10 @@
 #include "parse_command_line.h"
 #include "NSGDist.h"
 #include "types.h"
-// #include "common/time_loop.h"
 
 float euclidian_distance(const uint8_t *p, const uint8_t *q, unsigned d) {
   int result = 0;
-  for (int i = 0; i < d; i++) {
+  for (unsigned i = 0; i < d; i++) {
     result += ((int32_t)((int16_t)q[i] - (int16_t)p[i])) *
       ((int32_t)((int16_t)q[i] - (int16_t)p[i]));
   }
@@ -49,7 +48,7 @@ float euclidian_distance(const uint8_t *p, const uint8_t *q, unsigned d) {
 
 float euclidian_distance(const int8_t *p, const int8_t *q, unsigned d) {
   int result = 0;
-  for (int i = 0; i < d; i++) {
+  for (unsigned i = 0; i < d; i++) {
     result += ((int32_t)((int16_t)q[i] - (int16_t)p[i])) *
       ((int32_t)((int16_t)q[i] - (int16_t)p[i]));
   }
@@ -69,7 +68,7 @@ struct Euclidian_Point {
   static bool is_metric() {return true;}
   T operator[](long i){return *(values + i);}
 
-  float distance(const Euclidian_Point<T>& x) {
+  float distance(const Euclidian_Point<T>& x) const {
     return euclidian_distance(this->values, x.values, d);
   }
 
@@ -81,11 +80,14 @@ struct Euclidian_Point {
 
   long id() {return id_;}
 
-  Euclidian_Point(const T* values, unsigned int d, unsigned int ad, long id)
+  Euclidian_Point()
+    : values(nullptr), d(0), aligned_d(0), id_(-1) {}
+
+  Euclidian_Point(T* values, unsigned int d, unsigned int ad, long id)
     : values(values), d(d), aligned_d(ad), id_(id) {}
 
-  bool operator==(const Euclidian_Point<T>& q){
-    for (int i = 0; i < d; i++) {
+  bool operator==(const Euclidian_Point<T>& q) const {
+    for (unsigned i = 0; i < d; i++) {
       if (values[i] != q.values[i]) {
         return false;
       }
@@ -97,18 +99,14 @@ struct Euclidian_Point {
     return values == q.values;
   }
 
-  const T* get_values() const {return values;}
-
-  Euclidian_Point<T> centroid(const Euclidian_Point<T>& q, long id) {
-    T* new_values = (T*) malloc(d * sizeof(T));
-    for (int i = 0; i < d; i++) {
-      new_values[i] = (values[i] + q.values[i]) / 2;
+  void centroid(const Euclidian_Point<T>& q) {
+    for (unsigned i = 0; i < d; i++) {
+      values[i] = (values[i] + q.values[i]) / 2;
     }
-    return Euclidian_Point<T>(new_values, d, aligned_d, id);
   }
 
 private:
-  const T* values;
+  T* values;
   unsigned int d;
   unsigned int aligned_d;
   long id_;

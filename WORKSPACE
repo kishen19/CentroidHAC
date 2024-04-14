@@ -1,28 +1,7 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/cpp:cc_configure.bzl", "cc_configure")
 
 cc_configure()
-
-# local_repository(
-#    name = "parlaylib",
-#    path = "external/parlaylib/include/parlay",
-# )
-
-local_repository(
-    name = "CPAM",
-    path = "external/CPAM/include/",
-)
-
-bind(
-    name = "cpam",
-    actual = "@CPAM//cpam:cpam",
-)
-
-bind(
-    name = "pam",
-    actual = "@CPAM//pam:pam",
-)
 
 http_archive(
     name = "parlaylib",

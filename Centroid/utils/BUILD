@@ -1,36 +1,6 @@
 licenses(["notice"])
 
 cc_library(
-    name = "aspen_flat_graph",
-    hdrs = ["aspen_flat_graph.h"],
-    deps = [
-        "@parlaylib//parlay:parallel",
-        "@parlaylib//parlay:primitives",
-        "@parlaylib//parlay/internal:file_map",
-        "//external:cpam",
-        "//external:pam",
-        "//Centroid/utils/aspen_flat:aspen_flat",
-        ":types",
-        ":NSGDist",
-    ],
-)
-
-cc_library(
-    name = "aspen_graph",
-    hdrs = ["aspen_graph.h"],
-    deps = [
-        "@parlaylib//parlay:parallel",
-        "@parlaylib//parlay:primitives",
-        "@parlaylib//parlay/internal:file_map",
-        "//external:cpam",
-        "//external:pam",
-        "//Centroid/utils/aspen:aspen",
-        ":types",
-        ":NSGDist",
-    ],
-)
-
-cc_library(
     name = "beamSearch",
     hdrs = ["beamSearch.h"],
     deps = [

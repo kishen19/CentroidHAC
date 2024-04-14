@@ -14,8 +14,6 @@ cc_library(
         "//Centroid/utils:stats",
         "//Centroid/utils:types",
         "//Centroid/utils:graph",
-        "//Centroid/utils:aspen_graph",
-        "//Centroid/utils:aspen_flat_graph",
         "//Centroid/common:index",
         "//Centroid/common:union_find",
     ],
@@ -35,8 +33,6 @@ cc_binary(
         "//Centroid/utils:point_range",
         "//Centroid/utils:mips_point",
         "//Centroid/utils:graph",
-        "//Centroid/utils:aspen_graph",
-        "//Centroid/utils:aspen_flat_graph",
     ],
 )
 
