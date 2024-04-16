@@ -30,11 +30,13 @@
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
 #include "parlay/random.h"
+
 #include "Centroid/utils/NSGDist.h"
 #include "Centroid/utils/point_range.h"
 #include "Centroid/utils/graph.h"
-#include "Centroid/utils/types.h"
-#include "Centroid/utils/beamSearch.h"
+
+#include "utils/beamSearch.h"
+#include "utils/types.h"
 
 
 template<typename Point, typename PointRange, typename indexType>

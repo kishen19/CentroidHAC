@@ -33,9 +33,6 @@
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
 #include "parlay/internal/file_map.h"
-#include "types.h"
-#include "NSGDist.h"
-#include "parse_command_line.h"
 
 template<typename indexType>
 struct edgeRange{

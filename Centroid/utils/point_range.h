@@ -33,8 +33,6 @@
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
 #include "parlay/internal/file_map.h"
-#include "parse_command_line.h"
-#include "types.h"
 
 //tp_size must divide 64 evenly--no weird/large types!
 long dim_round_up(long dim, long tp_size){

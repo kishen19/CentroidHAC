@@ -27,19 +27,18 @@
 #include "parlay/primitives.h"
 #include "parlay/random.h"
 
-#include "Centroid/utils/NSGDist.h"
-#include "Centroid/utils/beamSearch.h"
-#include "Centroid/utils/check_nn_recall.h"
-#include "Centroid/utils/parse_results.h"
-#include "Centroid/utils/stats.h"
-#include "Centroid/utils/types.h"
+#include "Centroid/ANN/vamana.h"
+#include "Centroid/ANN/utils/beamSearch.h"
+#include "Centroid/ANN/utils/stats.h"
+#include "Centroid/ANN/utils/types.h"
+// #include "Centroid/utils/check_nn_recall.h"
+// #include "Centroid/utils/parse_results.h"
 #include "Centroid/utils/graph.h"
-#include "Centroid/common/index.h"
-#include "Centroid/common/union_find.h"
+#include "Centroid/utils/union_find.h"
 
 
 template<typename Point, typename PointRange, typename indexType>
-void Centroid(Graph<indexType> &G, long k, BuildParams &BP,
+void Centroid(Graph<indexType> &G, BuildParams &BP,
          char *ofile,
          bool graph_built, PointRange &Points) {
   

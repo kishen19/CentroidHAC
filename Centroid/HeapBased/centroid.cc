@@ -30,12 +30,12 @@
 
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
+
 #include "Centroid/utils/parse_command_line.h"
 #include "Centroid/utils/time_loop.h"
-#include "Centroid/utils/NSGDist.h"
 #include "Centroid/utils/euclidean_point.h"
-#include "Centroid/utils/point_range.h"
 #include "Centroid/utils/mips_point.h"
+#include "Centroid/utils/point_range.h"
 #include "Centroid/utils/graph.h"
 
 #include "centroid.h"
@@ -46,9 +46,9 @@
 
 using uint = unsigned int;
 
-//file order: {base, query, graph, groundtruth, graph_outfile, res_file}
+//file order: {base, graph, graph_outfile}
 template<typename PointRange, typename indexType>
-void Centroid_main(parlay::sequence<char*> files, long k, BuildParams &BP, bool test){
+void Centroid_main(parlay::sequence<char*> files, BuildParams &BP, bool test){
   using Point = typename PointRange::pT;
 
   //load points (filename, bool: test dataset)
@@ -57,18 +57,18 @@ void Centroid_main(parlay::sequence<char*> files, long k, BuildParams &BP, bool 
 
   //load graph
   long maxDeg = BP.max_degree();
-  bool graph_built = (files[2] != NULL);
+  bool graph_built = (files[1] != NULL);
   std::cout << graph_built << std::endl;
   Graph<indexType> G;
   if(graph_built){
     std::cout << "Loading Graph..." << std::endl;
-    G = Graph<indexType>(files[2]);
+    G = Graph<indexType>(files[1]);
   } else{
     std::cout << "Building Graph..." << std::endl;
     G = Graph<indexType>(maxDeg, n);
   }
   std::cout << "Centroid..." << std::endl;
-  Centroid<Point, PointRange, indexType>(G, k, BP, files[4], graph_built, Points);
+  Centroid<Point, PointRange, indexType>(G, BP, files[2], graph_built, Points);
 }
 
 int main(int argc, char* argv[]) {
@@ -79,69 +79,62 @@ int main(int argc, char* argv[]) {
         "[-memory_flag <algoOpt>] [-mst_deg <q>] [num_clusters <nc>] [cluster_size <cs>]"
         "[-data_type <tp>] [-dist_func <df>][-base_path <b>] <inFile>");
 
-  // Get all input params
+  // Get input files
   char* iFile = P.getOptionValue("-base_path");
   char* oFile = P.getOptionValue("-graph_outfile");
   char* gFile = P.getOptionValue("-graph_path");
-  char* qFile = P.getOptionValue("-query_path");
-  char* cFile = P.getOptionValue("-gt_path");
-  char* rFile = P.getOptionValue("-res_path");
-  char* vectype = P.getOptionValue("-data_type");
-  std::string tp = std::string(vectype);
-  long R = P.getOptionIntValue("-R", 0);
-  if(R<0) P.badArgument();
-  long L = P.getOptionIntValue("-L", 0);
-  if(L<0) P.badArgument();
+  bool test = (P.getOptionIntValue("-test", 0)==1);
 
+  // Get input params
+  std::string tp = std::string(P.getOptionValue("-data_type"));
+  std::string df = std::string(P.getOptionValue("-dist_func"));
+  if((tp != "uint8") && (tp != "int8") && (tp != "float")){
+    std::cout << "Error: vector type not specified correctly, specify int8, uint8, or float" << std::endl;
+    abort();
+  }
+  if(df != "Euclidean" && df != "mips"){
+    std::cout << "Error: specify distance type Euclidean or mips" << std::endl;
+    abort();
+  }
+
+  // Get ANN related params
+  long R = P.getOptionIntValue("-R", 0); if(R<0) P.badArgument();
+  long L = P.getOptionIntValue("-L", 0); if(L<0) P.badArgument();
   long MST_deg = P.getOptionIntValue("-mst_deg", 0);
   if(MST_deg < 0) P.badArgument();
   long num_clusters = P.getOptionIntValue("-num_clusters", 0);
   if(num_clusters<0) P.badArgument();
   long cluster_size = P.getOptionIntValue("-cluster_size", 0);
   if(cluster_size<0) P.badArgument();
-  long k = P.getOptionIntValue("-k", 0);
-  if (k > 1000 || k < 0) P.badArgument();
   double alpha = P.getOptionDoubleValue("-alpha", 1.0);
   int two_pass = P.getOptionIntValue("-two_pass", 0);
   if(two_pass > 1 | two_pass < 0) P.badArgument();
   bool pass = (two_pass == 1);
-  double delta = P.getOptionDoubleValue("-delta", 0);
-  if(delta<0) P.badArgument();
-  char* dfc = P.getOptionValue("-dist_func");
-  std::string df = std::string(dfc);
-  bool test = (P.getOptionIntValue("-test", 0)==1);
-
-  if((tp != "uint8") && (tp != "int8") && (tp != "float")){
-    std::cout << "Error: vector type not specified correctly, specify int8, uint8, or float" << std::endl;
-    abort();
-  }
-  if(df != "Euclidian" && df != "mips"){
-    std::cout << "Error: specify distance type Euclidian or mips" << std::endl;
-    abort();
-  }
+  double delta = P.getOptionDoubleValue("-delta", 0); if(delta<0) P.badArgument();
+  
 
   BuildParams BP = BuildParams(R, L, alpha, pass, num_clusters, cluster_size, MST_deg, delta);
   long maxDeg = BP.max_degree();
-  parlay::sequence<char*> files = {iFile, qFile, gFile, cFile, oFile, rFile};
+  parlay::sequence<char*> files = {iFile, gFile, oFile};
 
   std::cout << "Starting..." << std::endl;
   if(tp == "float"){
-    if(df == "Euclidian"){
-      Centroid_main<PointRange<float, Euclidian_Point<float>>, uint>(files, k, BP, test);
+    if(df == "Euclidean"){
+      Centroid_main<PointRange<float, Euclidean_Point<float>>, uint>(files, BP, test);
     } else if(df == "mips"){
-      Centroid_main<PointRange<float, Mips_Point<float>>, uint>(files, k, BP, test);
+      Centroid_main<PointRange<float, Mips_Point<float>>, uint>(files, BP, test);
     }
   } else if(tp == "uint8"){
-    if(df == "Euclidian"){
-      Centroid_main<PointRange<uint8_t, Euclidian_Point<uint8_t>>, uint>(files, k, BP, test);
+    if(df == "Euclidean"){
+      Centroid_main<PointRange<uint8_t, Euclidean_Point<uint8_t>>, uint>(files, BP, test);
     } else if(df == "mips"){
-      Centroid_main<PointRange<uint8_t, Mips_Point<uint8_t>>, uint>(files, k, BP, test);
+      Centroid_main<PointRange<uint8_t, Mips_Point<uint8_t>>, uint>(files, BP, test);
     }
   } else if(tp == "int8"){
-    if(df == "Euclidian"){
-      Centroid_main<PointRange<int8_t, Euclidian_Point<int8_t>>, uint>(files, k, BP, test);
+    if(df == "Euclidean"){
+      Centroid_main<PointRange<int8_t, Euclidean_Point<int8_t>>, uint>(files, BP, test);
     } else if(df == "mips"){
-      Centroid_main<PointRange<int8_t, Mips_Point<int8_t>>, uint>(files, k, BP, test);
+      Centroid_main<PointRange<int8_t, Mips_Point<int8_t>>, uint>(files, BP, test);
     }
   }
   return 0;

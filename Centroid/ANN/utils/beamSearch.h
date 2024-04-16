@@ -33,10 +33,12 @@
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
 #include "parlay/random.h"
-#include "types.h"
-#include "graph.h"
+
+#include "Centroid/utils/union_find.h"
+#include "Centroid/utils/graph.h"
+
 #include "stats.h"
-#include "Centroid/common/union_find.h"
+#include "types.h"
 
 // main beam search
 template<typename indexType, typename Point, typename PointRange, class GT>

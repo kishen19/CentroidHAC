@@ -28,7 +28,6 @@
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
 #include "parlay/internal/file_map.h"
-#include "parse_command_line.h"
 
 
 // returns a pointer and a length
