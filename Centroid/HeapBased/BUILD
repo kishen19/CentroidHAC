@@ -1,13 +1,28 @@
 licenses(["notice"])
 
 cc_library(
+    name = "nn_types",
+    hdrs = ["nn_types.h"],
+    deps = [
+        "//Centroid/ANN:vamana",
+        "//Centroid/ANN/utils:beamSearch",
+        "//Centroid/ANN/utils:types",
+        "//Centroid/ANN/utils:stats",
+        "//Centroid/utils:graph",
+        "//Centroid/utils:union_find",
+    ],
+)
+
+#include "Centroid/ANN/utils/beamSearch.h"
+#include "Centroid/ANN/utils/types.h"
+#include "Centroid/ANN/utils/stats.h"
+#include "Centroid/utils/graph.h"
+#include "Centroid/utils/union_find.h"
+
+cc_library(
     name = "centroid",
     hdrs = ["centroid.h"],
     deps = [
-        "@parlaylib//parlay:parallel",
-        "@parlaylib//parlay:primitives",
-        "@parlaylib//parlay:random",
-        "//Centroid/ANN:vamana",
         "//Centroid/ANN/utils:beamSearch",
         "//Centroid/ANN/utils:stats",
         "//Centroid/ANN/utils:types",
@@ -29,6 +44,7 @@ cc_binary(
         "//Centroid/utils:mips_point",
         "//Centroid/utils:graph",
         ":centroid",
+        ":nn_types",
     ],
 )
 

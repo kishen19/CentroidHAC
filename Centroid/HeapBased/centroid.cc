@@ -39,6 +39,7 @@
 #include "Centroid/utils/graph.h"
 
 #include "centroid.h"
+#include "nn_types.h"
 
 // *************************************************************
 //  TIMING
@@ -48,27 +49,21 @@ using uint = unsigned int;
 
 //file order: {base, graph, graph_outfile}
 template<typename PointRange, typename indexType>
-void Centroid_main(parlay::sequence<char*> files, BuildParams &BP, bool test){
+void Centroid_main(parlay::sequence<char*> files, bool test, bool exact, 
+    long R, long L, double alpha, bool pass, 
+    long num_clusters, long cluster_size, long MST_deg, double delta){
   using Point = typename PointRange::pT;
 
   //load points (filename, bool: test dataset)
   PointRange Points = PointRange(files[0], test);
-  size_t n = Points.size();
 
-  //load graph
-  long maxDeg = BP.max_degree();
-  bool graph_built = (files[1] != NULL);
-  std::cout << graph_built << std::endl;
-  Graph<indexType> G;
-  if(graph_built){
-    std::cout << "Loading Graph..." << std::endl;
-    G = Graph<indexType>(files[1]);
+  if (exact){
+    auto NN = nn_exact<Point, PointRange, indexType>();
+    Centroid<Point, PointRange, indexType, nn_exact<Point, PointRange, indexType>>(files[2], Points, NN);
   } else{
-    std::cout << "Building Graph..." << std::endl;
-    G = Graph<indexType>(maxDeg, n);
+    auto NN = nn_knn<Point, PointRange, indexType>(files[1], R, L, alpha, pass, Points.size());
+    Centroid<Point, PointRange, indexType, nn_knn<Point, PointRange, indexType>>(files[2], Points, NN);
   }
-  std::cout << "Centroid..." << std::endl;
-  Centroid<Point, PointRange, indexType>(G, BP, files[2], graph_built, Points);
 }
 
 int main(int argc, char* argv[]) {
@@ -83,7 +78,7 @@ int main(int argc, char* argv[]) {
   char* iFile = P.getOptionValue("-base_path");
   char* oFile = P.getOptionValue("-graph_outfile");
   char* gFile = P.getOptionValue("-graph_path");
-  bool test = (P.getOptionIntValue("-test", 0)==1);
+  bool test = P.getOption("-test");
 
   // Get input params
   std::string tp = std::string(P.getOptionValue("-data_type"));
@@ -111,30 +106,31 @@ int main(int argc, char* argv[]) {
   if(two_pass > 1 | two_pass < 0) P.badArgument();
   bool pass = (two_pass == 1);
   double delta = P.getOptionDoubleValue("-delta", 0); if(delta<0) P.badArgument();
+  bool exact = P.getOption("-exact");
   
 
-  BuildParams BP = BuildParams(R, L, alpha, pass, num_clusters, cluster_size, MST_deg, delta);
-  long maxDeg = BP.max_degree();
+  // BuildParams BP = BuildParams(R, L, alpha, pass, num_clusters, cluster_size, MST_deg, delta);
+  // long maxDeg = BP.max_degree();
   parlay::sequence<char*> files = {iFile, gFile, oFile};
 
   std::cout << "Starting..." << std::endl;
   if(tp == "float"){
     if(df == "Euclidean"){
-      Centroid_main<PointRange<float, Euclidean_Point<float>>, uint>(files, BP, test);
+      Centroid_main<PointRange<float, Euclidean_Point<float>>, uint>(files, test, exact, R, L, alpha, pass, num_clusters, cluster_size, MST_deg, delta);
     } else if(df == "mips"){
-      Centroid_main<PointRange<float, Mips_Point<float>>, uint>(files, BP, test);
+      Centroid_main<PointRange<float, Mips_Point<float>>, uint>(files, test, exact, R, L, alpha, pass, num_clusters, cluster_size, MST_deg, delta);
     }
   } else if(tp == "uint8"){
     if(df == "Euclidean"){
-      Centroid_main<PointRange<uint8_t, Euclidean_Point<uint8_t>>, uint>(files, BP, test);
+      Centroid_main<PointRange<uint8_t, Euclidean_Point<uint8_t>>, uint>(files, test, exact, R, L, alpha, pass, num_clusters, cluster_size, MST_deg, delta);
     } else if(df == "mips"){
-      Centroid_main<PointRange<uint8_t, Mips_Point<uint8_t>>, uint>(files, BP, test);
+      Centroid_main<PointRange<uint8_t, Mips_Point<uint8_t>>, uint>(files, test, exact, R, L, alpha, pass, num_clusters, cluster_size, MST_deg, delta);
     }
   } else if(tp == "int8"){
     if(df == "Euclidean"){
-      Centroid_main<PointRange<int8_t, Euclidean_Point<int8_t>>, uint>(files, BP, test);
+      Centroid_main<PointRange<int8_t, Euclidean_Point<int8_t>>, uint>(files, test, exact, R, L, alpha, pass, num_clusters, cluster_size, MST_deg, delta);
     } else if(df == "mips"){
-      Centroid_main<PointRange<int8_t, Mips_Point<int8_t>>, uint>(files, BP, test);
+      Centroid_main<PointRange<int8_t, Mips_Point<int8_t>>, uint>(files, test, exact, R, L, alpha, pass, num_clusters, cluster_size, MST_deg, delta);
     }
   }
   return 0;
