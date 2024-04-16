@@ -36,34 +36,35 @@
 #include "types.h"
 #include "graph.h"
 #include "stats.h"
+#include "Centroid/common/union_find.h"
 
 // main beam search
 template<typename indexType, typename Point, typename PointRange, class GT>
 std::pair<std::pair<parlay::sequence<std::pair<indexType, typename Point::distanceType>>, parlay::sequence<std::pair<indexType, typename Point::distanceType>>>, size_t>
 beam_search_impl(Point p, GT &G, PointRange &Points,
-        parlay::sequence<indexType> starting_points, QueryParams &QP);
+        parlay::sequence<indexType> starting_points, QueryParams &QP, union_find<indexType>* uf);
 
 template<typename Point, typename PointRange, typename indexType>
 std::pair<std::pair<parlay::sequence<std::pair<indexType, typename Point::distanceType>>, parlay::sequence<std::pair<indexType, typename Point::distanceType>>>, indexType>
 beam_search(Point p, Graph<indexType> &G, PointRange &Points,
-	    indexType starting_point, QueryParams &QP) {
+	    indexType starting_point, QueryParams &QP, union_find<indexType>* uf = nullptr) {
   
   parlay::sequence<indexType> start_points = {starting_point};
-  return beam_search_impl<indexType>(p, G, Points, start_points, QP);
+  return beam_search_impl<indexType>(p, G, Points, start_points, QP, uf);
 }
 
 template<typename Point, typename PointRange, typename indexType>
 std::pair<std::pair<parlay::sequence<std::pair<indexType, typename Point::distanceType>>, parlay::sequence<std::pair<indexType, typename Point::distanceType>>>, size_t>
 beam_search(Point p, Graph<indexType> &G, PointRange &Points,
-        parlay::sequence<indexType> starting_points, QueryParams &QP) {
-  return beam_search_impl<indexType>(p, G, Points, starting_points, QP);
+        parlay::sequence<indexType> starting_points, QueryParams &QP, union_find<indexType>* uf = nullptr) {
+  return beam_search_impl<indexType>(p, G, Points, starting_points, QP, uf);
 }
 
 // main beam search
 template<typename indexType, typename Point, typename PointRange, class GT>
 std::pair<std::pair<parlay::sequence<std::pair<indexType, typename Point::distanceType>>, parlay::sequence<std::pair<indexType, typename Point::distanceType>>>, size_t>
 beam_search_impl(Point p, GT &G, PointRange &Points,
-	      parlay::sequence<indexType> starting_points, QueryParams &QP) {
+	      parlay::sequence<indexType> starting_points, QueryParams &QP, union_find<indexType>* uf) {
 
   // compare two (node_id,distance) pairs, first by distance and then id if
   // equal
@@ -87,10 +88,13 @@ beam_search_impl(Point p, GT &G, PointRange &Points,
   // Frontier maintains the closest points found so far and its size
   // is always at most beamSize.  Each entry is a (id,distance) pair.
   // Initialized with starting points and kept sorted by distance.
+  if (uf == nullptr){
+    uf = new union_find<indexType>(G.size());
+  }
   std::vector<std::pair<indexType, distanceType>> frontier;
   frontier.reserve(QP.beamSize);
   for (auto q : starting_points)
-    frontier.push_back(std::pair<indexType, distanceType>(q, Points[q].distance(p)));
+    frontier.push_back(std::pair<indexType, distanceType>(uf->find_compress(q), Points[uf->find_compress(q)].distance(p)));
   std::sort(frontier.begin(), frontier.end(), less);
 
   // The subset of the frontier that has not been visited
@@ -136,7 +140,7 @@ beam_search_impl(Point p, GT &G, PointRange &Points,
     keep.clear();
     long num_elts = std::min<long>(G[current.first].size(), QP.degree_limit);
     for (indexType i=0; i<num_elts; i++) {
-      auto a = G[current.first][i];
+      auto a = uf->find_compress(G[current.first][i]);
       if (has_been_seen(a) || Points[a].same_as(p)) continue;  // skip if already seen
       keep.push_back(a);
       Points[a].prefetch();

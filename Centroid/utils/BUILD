@@ -11,6 +11,7 @@ cc_library(
         ":types",
         ":graph",
         ":stats",
+        "//Centroid/common:union_find",
     ],
 )
 

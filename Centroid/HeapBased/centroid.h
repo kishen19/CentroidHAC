@@ -21,7 +21,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
-
 #include <algorithm>
 
 #include "parlay/parallel.h"
@@ -43,6 +42,7 @@ template<typename Point, typename PointRange, typename indexType>
 void Centroid(Graph<indexType> &G, long k, BuildParams &BP,
          char *ofile,
          bool graph_built, PointRange &Points) {
+  
   using findex = knn_index<Point, PointRange, indexType>;
   using distanceType = typename Point::distanceType;
   // parlay::internal::timer t("Centroid");
@@ -60,61 +60,91 @@ void Centroid(Graph<indexType> &G, long k, BuildParams &BP,
 
   // Init UF and other stuff
   auto uf = union_find<indexType>(n);
+  I.set_start();
+  indexType start_point = I.get_start();
+  QueryParams QP((long) 2, BP.L,  (double) 10.00, (long) Points.size(), (long) G.max_degree());
+  size_t rem = n;
+  auto nearest_neighbor = [&](indexType u) {
+    auto out = beam_search(Points[u], G, Points, start_point, QP, &uf).first.first;
+    parlay::sort_inplace(out, [&](auto x, auto y){
+      return (x.second < y.second)?1:((x.second == y.second && x.first < y.first)?1:0);
+    });
+    int ind = 0;
+    while (ind < out.size()){
+      if (out[ind].first != u){ return out[ind]; }
+      ind++;
+    }
+    std::cout << "No NN found for " << u << std::endl;
+    std::cout << "rem = " << rem << std::endl; 
+    for (int i=0; i< G[u].size(); i++){
+      std::cout << G[u][i] << " " << uf.find_compress(G[u][i]) << std::endl; 
+    }
+    abort();
+  };
 
   // Init Priority Queue
   using kv = std::tuple<distanceType,indexType,indexType>;
-  I.set_start();
-  indexType start_point = I.get_start();
-  QueryParams QP((long) 2, BP.L,  (double) 1.00, (long) Points.size(), (long) G.max_degree());
   auto h = parlay::sequence<kv>::from_function(n,[&](size_t i){
-    auto out = beam_search(Points[i], G, Points, start_point, QP);
-    if (i<10){
-      std::cout << i << " " << out.first.first[0].first << " - " << out.first.first[0].second << ", " << out.first.first[1].first << " - " << out.first.first[1].second << std::endl;
-    }
-    if (out.first.first[0].first!=i){
-      return std::make_tuple(out.first.first[0].second,i,out.first.first[0].first);
-    } else {
-      return std::make_tuple(out.first.first[1].second,i,out.first.first[1].first);
-    }
+    auto cur_best = nearest_neighbor(i);
+    return std::make_tuple(cur_best.second,i,cur_best.first);
   });
-  for (int i=0; i<10; i++){
-    std::cout << std::get<0>(h[i]) << " " << std::get<1>(h[i]) << " " << std::get<2>(h[i]) << std::endl;
-  }
   std::priority_queue<kv, std::vector<kv>, std::greater<kv>> H(h.begin(), h.end());
   std::cout << "Heap Init Done" << std::endl;
 
   // Centroid Process
   std::cout << "Starting Centroid Process" << std::endl;
-  size_t rem = n;
-  indexType u,v,u_orig,v_orig;
+  auto merge_clusters = [&](indexType u, indexType v) -> indexType {
+    indexType w = uf.unite(u,v);
+    Points[w].centroid(Points[w^u^v]); // Update u (or v) to the centroid
+    auto cand = parlay::sequence<indexType>::from_function(G[w].size()+G[w^u^v].size(),[&](size_t i){
+      if (i < G[w].size()) {return uf.find_compress(G[w][i]);}
+      else {return uf.find_compress(G[w^u^v][i-G[w].size()]);}
+    });
+    auto filtered_cand = parlay::filter(cand, [&](indexType x){return x != w;});
+    auto new_nbhs = I.robustPrune(w, filtered_cand, G, Points, BP.alpha, false);
+    G[w].update_neighbors(new_nbhs);
+    return w;
+  };
+  
+  indexType u,v,w,u_orig,v_orig;
   distanceType dist;
   distanceType total_dist = 0;
+  double eps = 0.1;
   while (rem > 1){
     kv best = H.top();
     H.pop();
-    u_orig = std::get<1>(best);
-    v_orig = std::get<2>(best);
-    std::cout << "u: " << u_orig << ", v: " << v_orig << ", dist: " << dist << std::endl;
-    u = uf.find_compress(u_orig);
-    v = uf.find_compress(v_orig);
-    if (u == v || u!=u_orig || v!=v_orig){
+    std::tie(dist, u_orig, v_orig) = best;
+    u = uf.find_compress(u_orig); // Centroid of u
+    v = uf.find_compress(v_orig); // Centroid of v
+    if (u == v || u!= u_orig){ // u_orig & v_orig in same cluster already, or u_orig is not active
       continue;
-    } else {
-      auto out = beam_search(Points[u], G, Points, I.get_start(), QP);
-      std::pair<indexType,distanceType> cur_best;
-      if (out.first.first[0].first != u){
-        cur_best = out.first.first[0];
-      } else{
-        cur_best = out.first.first[1];
-      }
-      if (cur_best.second < dist){ // cur point is not nearest TODO: use a multiplier eps
-        H.push(std::make_tuple(cur_best.second, u, cur_best.first));
-      } else{
-        auto w = uf.unite(u,v);
-        Points[w].centroid(Points[w^u^v]); // Update u (or v) to the centroid
-        total_dist += dist;
+    } else if (v != v_orig) { // v_orig is not active
+      // recompute dist and check if within 1+eps (instead of beam_search)
+      auto new_dist = Points[u].distance(Points[v]);
+      if (new_dist <= (1+eps)*dist){ // If d(u,v) is at most (1+eps)*d(u,v_orig)<=(1+eps)*opt
+        w = merge_clusters(u,v);
+        total_dist += new_dist;
         rem--;
+      } else { // Search nearest point to u, say v', and check if d(u,v')<=(1+eps)*dist <= (1+eps)opt
+        std::pair<indexType,distanceType> cur_best = nearest_neighbor(u);
+        if (cur_best.second <= (1+eps)*dist){
+          w = merge_clusters(u,cur_best.first);
+          total_dist += cur_best.second;
+          rem--;
+        } else{
+          w = u;
+        }
       }
+      if (rem == 1){ break; }
+      std::pair<indexType,distanceType> closest_to_w = nearest_neighbor(w);
+      H.push(std::make_tuple(closest_to_w.second, w, closest_to_w.first));
+    } else{ // Always merge
+      auto w = merge_clusters(u,v);
+      total_dist += dist;
+      rem--;
+      if (rem == 1){ break; }
+      std::pair<indexType,distanceType> closest_to_w = nearest_neighbor(w);
+      H.push(std::make_tuple(closest_to_w.second, w, closest_to_w.first));
     }
   }
   std::cout << "Centroid Process Done" << std::endl;
