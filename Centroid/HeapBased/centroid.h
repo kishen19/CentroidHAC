@@ -16,10 +16,11 @@ void Centroid(char *ofile,
   
   using distanceType = typename Point::distanceType;
   using kv = std::tuple<distanceType,indexType,indexType>; // Heap element type
-  // parlay::internal::timer t("Centroid");
+  parlay::internal::timer t("Centroid");
 
   // Build Index
   NN.init(Points, ofile);
+  t.next("Index Built");
 
   // Init UF and other stuff
   size_t n = Points.size();
@@ -31,17 +32,26 @@ void Centroid(char *ofile,
     return std::make_tuple(cur_best.second,i,cur_best.first);
   });
   std::priority_queue<kv, std::vector<kv>, std::greater<kv>> H(h.begin(), h.end());
-  std::cout << "Heap Init Done" << std::endl;
+  t.next("Init Done");
 
   // Centroid Process
-  std::cout << "Starting Centroid Process" << std::endl;
+  std::cout << "Starting Centroid Process..." << std::endl;
   indexType u, v, w, u_orig, v_orig;
   distanceType dist;
   distanceType total_dist = 0;
-  double eps = 0.1;
+  double eps = 0.1; // TODO: make this input param
   size_t rem = n;
+  // float n_ = n;
+  // float fac = 0.5;
   // main loop
   while (rem > 1){
+    // if (rem > 1000 && (float)rem < n_*fac){
+    //   std::cout << "rem: " << rem << ", n_: " << n_ << std::endl;
+    //   NN.rebuild_graph(Points, &uf);
+    //   n_ = rem;
+    // } else if (rem % 10000 == 0){
+    //   std::cout << "rem: " << rem << ", n_: " << n_ << std::endl;
+    // }
     kv best = H.top();
     H.pop();
     std::tie(dist, u_orig, v_orig) = best;
@@ -78,6 +88,7 @@ void Centroid(char *ofile,
       H.push(std::make_tuple(closest_to_w.second, w, closest_to_w.first));
     }
   }
+  t.next("Centroid Done");
   std::cout << "Centroid Process Done" << std::endl;
   std::cout << "Total Distance: " << total_dist << std::endl;
 }
