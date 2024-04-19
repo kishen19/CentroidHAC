@@ -41,17 +41,17 @@ void Centroid(char *ofile,
   distanceType total_dist = 0;
   double eps = 0.1; // TODO: make this input param
   size_t rem = n;
-  // float n_ = n;
-  // float fac = 0.5;
+  float n_ = n;
+  float fac = 0.5;
   // main loop
   while (rem > 1){
-    // if (rem > 1000 && (float)rem < n_*fac){
+    // if ((float)rem < n_*fac){
     //   std::cout << "rem: " << rem << ", n_: " << n_ << std::endl;
-    //   NN.rebuild_graph(Points, &uf);
-    //   n_ = rem;
-    // } else if (rem % 10000 == 0){
-    //   std::cout << "rem: " << rem << ", n_: " << n_ << std::endl;
-    // }
+      // NN.rebuild_graph(Points, &uf);
+      // n_ = rem;
+    /*} else */if (rem % 10000 == 0){
+      std::cout << "rem: " << rem << ", total_dist: " << total_dist << std::endl;
+    }
     kv best = H.top();
     H.pop();
     std::tie(dist, u_orig, v_orig) = best;

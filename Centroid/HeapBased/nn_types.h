@@ -91,13 +91,9 @@ struct nn_knn {
       if (out[ind].first != u){ return out[ind]; }
       ind++;
     }
-    // Error Handling
-    std::cout << "No NN found for " << u << std::endl;
-    std::cout << "rem = " << rem << std::endl; 
-    for (int i=0; i< G[u].size(); i++){
-      std::cout << G[u][i] << " " << uf->find_compress(G[u][i]) << std::endl; 
-    }
-    abort();
+    std::cout << "No NN found for " << u << ", rem: " << rem << std::endl;
+    rebuild_graph(Points, uf);
+    return nearest_neighbor(u, Points, uf, rem);
   }
 
   indexType merge_clusters(indexType u, indexType v, PR &Points, union_find<indexType> *uf) {
@@ -121,7 +117,7 @@ struct nn_knn {
   }
 
   void rebuild_graph(PR &Points, union_find<indexType> *uf){
-    std::cout << "Rebuilding graph...";
+    std::cout << "Rebuilding graph..." << std::endl;
     auto alive_mask = parlay::sequence<bool>::from_function(Points.size(), [&](size_t i){
       return uf->find_compress(i) == i;
     });
@@ -135,7 +131,7 @@ struct nn_knn {
     parlay::parallel_for (0, alive.size(), [&] (long i) {
       auto less = [&] (indexType j, indexType k) {
 		    return Points[alive[i]].distance(Points[j]) < Points[alive[i]].distance(Points[k]);};
-      G[alive[i]].sort(less);
+      new_G[alive[i]].sort(less);
     });
     G = new_G;
     std::cout << "Done" << std::endl;
