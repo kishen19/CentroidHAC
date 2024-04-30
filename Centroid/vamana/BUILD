@@ -1,8 +1,8 @@
 licenses(["notice"])
 
 cc_library(
-    name = "vamana",
-    hdrs = ["vamana.h"],
+    name = "index",
+    hdrs = ["index.h"],
     deps = [
         "@parlaylib//parlay:parallel",
         "@parlaylib//parlay:primitives",
@@ -10,8 +10,8 @@ cc_library(
         "//Centroid/utils:NSGDist",
         "//Centroid/utils:point_range",
         "//Centroid/utils:graph",
-        "//Centroid/ANN/utils:beamSearch",
-        "//Centroid/ANN/utils:types",
+        "//Centroid/vamana/utils:beamSearch",
+        "//Centroid/vamana/utils:types",
     ],
 )
 

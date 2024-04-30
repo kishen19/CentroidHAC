@@ -2,15 +2,16 @@
 
 #include <queue>
 
-#include "Centroid/ANN/vamana.h"
-#include "Centroid/ANN/utils/beamSearch.h"
-#include "Centroid/ANN/utils/types.h"
-#include "Centroid/ANN/utils/stats.h"
+#include "Centroid/vamana/index.h"
+#include "Centroid/vamana/utils/beamSearch.h"
+#include "Centroid/vamana/utils/types.h"
+#include "Centroid/vamana/utils/stats.h"
 #include "Centroid/utils/graph.h"
 #include "Centroid/utils/union_find.h"
 
-template<typename Point, typename PointRange, typename indexType>
+template<typename PointRange, typename indexType>
 struct nn_knn {
+  using Point = typename PointRange::pT;
   using distanceType = typename Point::distanceType;
   using pid = std::pair<indexType, distanceType>;
   using PR = PointRange;
@@ -48,29 +49,29 @@ struct nn_knn {
         G.save(ofile);
       }
     }
-    auto visited = parlay::sequence<bool>(Points.size(), false);
-    std::queue<indexType> q;
-    q.push(start_point);
-    visited[start_point] = true;
-    size_t num = 1;
-    while (!q.empty()){
-      indexType u = q.front();
-      q.pop();
-      for (size_t i=0; i<G[u].size(); i++){
-        indexType v = G[u][i];
-        if (!visited[v]){
-          q.push(v);
-          visited[v] = true;
-          num++;
-        }
-      }
-    }
-    std::cout << "num: " << num << std::endl;
-    for (int i=0; i<Points.size(); i++){
-      if (!visited[i]){
-        std::cout << "Unreachable point: " << i << std::endl;
-      }
-    }
+    // auto visited = parlay::sequence<bool>(Points.size(), false);
+    // std::queue<indexType> q;
+    // q.push(start_point);
+    // visited[start_point] = true;
+    // size_t num = 1;
+    // while (!q.empty()){
+    //   indexType u = q.front();
+    //   q.pop();
+    //   for (size_t i=0; i<G[u].size(); i++){
+    //     indexType v = G[u][i];
+    //     if (!visited[v]){
+    //       q.push(v);
+    //       visited[v] = true;
+    //       num++;
+    //     }
+    //   }
+    // }
+    // std::cout << "num: " << num << std::endl;
+    // for (int i=0; i<Points.size(); i++){
+    //   if (!visited[i]){
+    //     std::cout << "Unreachable point: " << i << std::endl;
+    //   }
+    // }
   }
 
   pid nearest_neighbor(indexType u, PR &Points, union_find<indexType> *uf, size_t rem) {
@@ -91,7 +92,7 @@ struct nn_knn {
       if (out[ind].first != u){ return out[ind]; }
       ind++;
     }
-    std::cout << "No NN found for " << u << ", rem: " << rem << std::endl;
+    // std::cout << "No NN found for " << u << ", rem: " << rem << std::endl;
     rebuild_graph(Points, uf);
     return nearest_neighbor(u, Points, uf, rem);
   }
@@ -126,20 +127,20 @@ struct nn_knn {
     stats<unsigned int> BuildStats(Points.size());
     parlay::sequence<indexType> inserts = parlay::tabulate(alive.size(), [&] (size_t i){
 					    return static_cast<indexType>(alive[i]);});
-    if(BP.two_pass) I->batch_insert(inserts, new_G, Points, BuildStats, 1.0, true, 2, .02);
-    I->batch_insert(inserts, new_G, Points, BuildStats, BP.alpha, true, 2, .02);
+    if(BP.two_pass) I->batch_insert(inserts, new_G, Points, BuildStats, 1.0, true, 2, .02, false);
+    I->batch_insert(inserts, new_G, Points, BuildStats, BP.alpha, true, 2, .02, false);
     parlay::parallel_for (0, alive.size(), [&] (long i) {
       auto less = [&] (indexType j, indexType k) {
 		    return Points[alive[i]].distance(Points[j]) < Points[alive[i]].distance(Points[k]);};
       new_G[alive[i]].sort(less);
     });
     G = new_G;
-    std::cout << "Done" << std::endl;
   }
 };
 
-template<typename Point, typename PointRange, typename indexType>
+template<typename PointRange, typename indexType>
 struct nn_exact {
+  using Point = typename PointRange::pT;
   using distanceType = typename Point::distanceType;
   using pid = std::pair<indexType, distanceType>;
   using PR = PointRange;
