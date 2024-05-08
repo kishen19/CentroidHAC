@@ -56,10 +56,10 @@ void Centroid_main(parlay::sequence<char*> files, bool test, bool exact,
     Points = PointRange(files[0], test);
     if (exact){
       auto NN = nn_exact<PointRange, indexType>();
-      total_time += CentroidHAC_dendrogram<PointRange, indexType, nn_exact<PointRange, indexType>>(Points, NN, eps, files[2], files[3]);
+      total_time += CentroidHAC<PointRange, indexType, nn_exact<PointRange, indexType>>(Points, NN, eps, files[2], files[3]);
     } else {
       auto NN = nn_knn<PointRange, indexType>(files[1], R, L, alpha, pass, Points.size());
-      total_time += CentroidHAC_dendrogram<PointRange, indexType, nn_knn<PointRange, indexType>>(Points, NN, eps, files[2], files[3]);
+      total_time += CentroidHAC<PointRange, indexType, nn_knn<PointRange, indexType>>(Points, NN, eps, files[2], files[3]);
     }
   }
   std::cout << "# time per iter: " << total_time/rounds << std::endl;

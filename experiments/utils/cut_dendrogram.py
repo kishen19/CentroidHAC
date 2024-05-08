@@ -19,6 +19,7 @@ def make_cuts(input_file, eps = 1):
     threshold = 1
     visited = [0]*(n-1)
     q = deque([i for i in range(n)])
+    iter = 0
     while threshold <= max_distance:
         new_q = deque()
         while q:
@@ -32,5 +33,6 @@ def make_cuts(input_file, eps = 1):
                 new_q.append(i)
         q = new_q
         labeling  = uf.get_labelling()
-        yield labeling
+        yield iter, labeling
+        iter += 1
         threshold *= one_plus_eps
