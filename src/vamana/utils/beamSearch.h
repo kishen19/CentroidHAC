@@ -34,8 +34,8 @@
 #include "parlay/primitives.h"
 #include "parlay/random.h"
 
-#include "Centroid/utils/union_find.h"
-#include "Centroid/utils/graph.h"
+#include "src/utils/union_find.h"
+#include "src/utils/graph.h"
 
 #include "stats.h"
 #include "types.h"

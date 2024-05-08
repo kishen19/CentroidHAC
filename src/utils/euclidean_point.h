@@ -98,9 +98,10 @@ struct Euclidean_Point {
     return values == q.values;
   }
 
-  void centroid(const Euclidean_Point<T>& q) {
+  void centroid(const Euclidean_Point<T>& q, size_t sz1, size_t sz2) {
+    size_t total_size = sz1 + sz2;
     for (unsigned i = 0; i < d; i++) {
-      values[i] = (values[i] + q.values[i]) / 2;
+      values[i] = (values[i]*sz1 + q.values[i]*sz2)/total_size;
     }
   }
 

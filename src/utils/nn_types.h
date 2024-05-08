@@ -2,12 +2,12 @@
 
 #include <queue>
 
-#include "Centroid/vamana/index.h"
-#include "Centroid/vamana/utils/beamSearch.h"
-#include "Centroid/vamana/utils/types.h"
-#include "Centroid/vamana/utils/stats.h"
-#include "Centroid/utils/graph.h"
-#include "Centroid/utils/union_find.h"
+#include "src/vamana/index.h"
+#include "src/vamana/utils/beamSearch.h"
+#include "src/vamana/utils/types.h"
+#include "src/vamana/utils/stats.h"
+#include "src/utils/graph.h"
+#include "src/utils/union_find.h"
 
 template<typename PointRange, typename indexType>
 struct nn_knn {
@@ -74,7 +74,7 @@ struct nn_knn {
     // }
   }
 
-  pid nearest_neighbor(indexType u, PR &Points, union_find<indexType> *uf, size_t rem) {
+  pid nearest_neighbor(indexType u, PR &Points, union_find<indexType> *uf) {
     // auto starting_points = parlay::sequence<indexType>::uninitialized(2*BP.L);
     // parlay::random_generator gen;
     // std::uniform_int_distribution<long> dis(0, Points.size() - 1);
@@ -84,32 +84,38 @@ struct nn_knn {
     //   starting_points[i] = dis(r);
     // });
     // auto out = beam_search(Points[u], G, Points, starting_points, QP, uf).first.second;
+    parlay::internal::timer t;
+    t.start();
     auto out = beam_search(Points[u], G, Points, start_point, QP, uf).first.second;
-    // parlay::sort_inplace(out, [&](auto x, auto y){ return x.second < y.second; });
-    //TODO: make this more efficient and parallel
-    int ind = 0;
+    t.start();
+    size_t ind = 0;
     while (ind < out.size()){
-      if (out[ind].first != u){ return out[ind]; }
+      if (out[ind].first != u){ 
+        return out[ind]; 
+      }
       ind++;
     }
-    // std::cout << "No NN found for " << u << ", rem: " << rem << std::endl;
     rebuild_graph(Points, uf);
-    return nearest_neighbor(u, Points, uf, rem);
+    return nearest_neighbor(u, Points, uf);
   }
 
   indexType merge_clusters(indexType u, indexType v, PR &Points, union_find<indexType> *uf) {
+    size_t sz1 = uf->get_size(u);
+    size_t sz2 = uf->get_size(v);
     indexType w = uf->unite(u,v);
-    Points[w].centroid(Points[w^u^v]); // Update u (or v) to the centroid
-    // auto out = beam_search(Points[w], G, Points, start_point, QP, uf).first.second;
-    auto cand = parlay::sequence<indexType>::from_function(G[w].size()+G[w^u^v].size()/*+std::min(BP.L,(long)out.size())*/,
+    indexType t = w^u^v;
+    if (w == u){
+      Points[w].centroid(Points[t], sz1, sz2); // Update u (or v) to the centroid
+    } else{
+      Points[w].centroid(Points[t], sz2, sz1); // Update u (or v) to the centroid
+    }
+    auto cand = parlay::sequence<indexType>::from_function(G[w].size()+G[t].size(),
         [&](size_t i){
       if (i < G[w].size()) {
         return uf->find_compress(G[w][i]);
-      } else if(i>= G[w].size() && i < G[w].size()+G[w^u^v].size()) {
-        return uf->find_compress(G[w^u^v][i-G[w].size()]);
-      }// else{
-      //   return out[i-G[w].size()-G[w^u^v].size()].first;
-      // }
+      } else {
+        return uf->find_compress(G[t][i-G[w].size()]);
+      }
     });
     auto filtered_cand = parlay::filter(cand, [&](indexType x){return x != w;});
     auto new_nbhs = I->robustPrune(w, filtered_cand, G, Points, BP.alpha, false);
@@ -127,7 +133,9 @@ struct nn_knn {
     stats<unsigned int> BuildStats(Points.size());
     parlay::sequence<indexType> inserts = parlay::tabulate(alive.size(), [&] (size_t i){
 					    return static_cast<indexType>(alive[i]);});
-    if(BP.two_pass) I->batch_insert(inserts, new_G, Points, BuildStats, 1.0, true, 2, .02, false);
+    if(BP.two_pass){
+      I->batch_insert(inserts, new_G, Points, BuildStats, 1.0, true, 2, .02, false);
+    }
     I->batch_insert(inserts, new_G, Points, BuildStats, BP.alpha, true, 2, .02, false);
     parlay::parallel_for (0, alive.size(), [&] (long i) {
       auto less = [&] (indexType j, indexType k) {
@@ -149,7 +157,7 @@ struct nn_exact {
 
   void init(PR &Points, char *ofile){}
 
-  pid nearest_neighbor(indexType u, PR &Points, union_find<indexType> *uf, size_t rem) {
+  pid nearest_neighbor(indexType u, PR &Points, union_find<indexType> *uf) {
     auto dists = parlay::sequence<distanceType>::from_function(Points.size(), [&](size_t i){
       return std::numeric_limits<distanceType>::max();
     });
@@ -163,8 +171,14 @@ struct nn_exact {
   }
 
   indexType merge_clusters(indexType u, indexType v, PR &Points, union_find<indexType> *uf) {
+    size_t sz1 = uf->get_size(u);
+    size_t sz2 = uf->get_size(v);
     indexType w = uf->unite(u,v);
-    Points[w].centroid(Points[w^u^v]); // Update u (or v) to the centroid
+    if (w == u){
+      Points[w].centroid(Points[v], sz1, sz2); // Update u (or v) to the centroid
+    } else{
+      Points[w].centroid(Points[u], sz2, sz1); // Update u (or v) to the centroid
+    }
     return w;
   }
 

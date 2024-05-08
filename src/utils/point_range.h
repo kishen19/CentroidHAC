@@ -62,9 +62,8 @@ struct PointRange{
     std::ifstream reader(filename);
     assert(reader.is_open());
     if (test) {
-      reader >> n;
-      reader >> dims;
-      aligned_dims =  dims;
+      reader >> n >> dims;
+      aligned_dims = dims;
       values = std::shared_ptr<T[]>((T*) aligned_alloc(64, n*aligned_dims*sizeof(T)), std::free);
       for (size_t i=0; i<n; i++){
         T* data = new T[dims];

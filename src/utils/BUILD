@@ -1,23 +1,23 @@
 licenses(["notice"])
 
-# cc_library(
-#     name = "check_nn_recall",
-#     hdrs = ["check_nn_recall.h"],
-#     deps = [
-#         "@parlaylib//parlay:parallel",
-#         "@parlaylib//parlay:primitives",
-#         ":beamSearch",
-#         ":csvfile",
-#         ":parse_results",
-#         ":types",
-#         ":stats",
-#     ],
-# )
+cc_library(
+    name = "check_nn_recall",
+    hdrs = ["check_nn_recall.h"],
+    deps = [
+        "@parlaylib//parlay:parallel",
+        "@parlaylib//parlay:primitives",
+        "//Centroid/vamana/utils:beamSearch",
+        "//Centroid/vamana/utils:types",
+        "//Centroid/vamana/utils:stats",
+        ":csvfile",
+        ":parse_results",
+    ],
+)
 
-# cc_library(
-#     name = "csvfile",
-#     hdrs = ["csvfile.h"],
-# )
+cc_library(
+    name = "csvfile",
+    hdrs = ["csvfile.h"],
+)
 
 cc_library(
     name = "euclidean_point",
@@ -67,6 +67,19 @@ cc_library(
 )
 
 cc_library(
+    name = "nn_types",
+    hdrs = ["nn_types.h"],
+    deps = [
+        "//src/vamana:index",
+        "//src/vamana/utils:types",
+        "//src/vamana/utils:stats",
+        "//src/vamana/utils:beamSearch",
+        ":graph",
+        ":union_find",
+    ],
+)
+
+cc_library(
     name = "NSGDist",
     hdrs = ["NSGDist.h"],
     deps = [
@@ -97,11 +110,6 @@ cc_library(
         "@parlaylib//parlay:primitives",
         "@parlaylib//parlay/internal:file_map",
     ],
-)
-
-cc_library(
-    name = "time_loop",
-    hdrs = ["time_loop.h"],
 )
 
 cc_library(

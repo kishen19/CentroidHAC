@@ -31,9 +31,9 @@
 #include "parlay/primitives.h"
 #include "parlay/random.h"
 
-#include "Centroid/utils/NSGDist.h"
-#include "Centroid/utils/point_range.h"
-#include "Centroid/utils/graph.h"
+#include "src/utils/NSGDist.h"
+#include "src/utils/point_range.h"
+#include "src/utils/graph.h"
 
 #include "utils/beamSearch.h"
 #include "utils/types.h"
@@ -258,6 +258,7 @@ struct knn_index {
     t_beam.stop();
     t_bidirect.stop();
     t_prune.stop();
+    auto uf = new union_find<indexType>(G.size());
     while (count < m) {
       size_t floor;
       size_t ceiling;
@@ -278,7 +279,7 @@ struct knn_index {
         size_t index = shuffled_inserts[i];
         QueryParams QP((long) 0, BP.L, (double) 0.0, (long) Points.size(), (long) G.max_degree());
         parlay::sequence<pid> visited = 
-          (beam_search<Point, PointRange, indexType>(Points[index], G, Points, start_point, QP)).first.second;
+          (beam_search<Point, PointRange, indexType>(Points[index], G, Points, start_point, QP, uf)).first.second;
         BuildStats.increment_visited(index, visited.size());
         new_out_[i-floor] = robustPrune(index, visited, G, Points, alpha); });
       t_beam.stop();

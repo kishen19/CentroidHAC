@@ -146,8 +146,8 @@ struct RangeGroundTruth{
 
 
 struct BuildParams{
-  long L; //vamana
   long R; //vamana and pynnDescent
+  long L; //vamana
   double m_l = 0; // HNSW
   double alpha; //vamana and pyNNDescent
   bool two_pass; //vamana

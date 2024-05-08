@@ -7,11 +7,11 @@ cc_library(
         "@parlaylib//parlay:parallel",
         "@parlaylib//parlay:primitives",
         "@parlaylib//parlay:random",
-        "//Centroid/utils:NSGDist",
-        "//Centroid/utils:point_range",
-        "//Centroid/utils:graph",
-        "//Centroid/vamana/utils:beamSearch",
-        "//Centroid/vamana/utils:types",
+        "//src/utils:NSGDist",
+        "//src/utils:point_range",
+        "//src/utils:graph",
+        "//src/vamana/utils:beamSearch",
+        "//src/vamana/utils:types",
     ],
 )
 

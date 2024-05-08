@@ -69,7 +69,7 @@ struct edgeRange{
             abort();
         }
         edges[0] = r.size();
-        for(int i=0; i<r.size(); i++){
+        for(size_t i=0; i<r.size(); i++){
             edges[i+1] = r[i];
         }    
     }
@@ -198,8 +198,8 @@ struct Graph{
     edgeRange<indexType> operator [] (indexType i) {return edgeRange<indexType>(graph.begin()+i*(maxDeg+1), graph.begin()+(i+1)*(maxDeg+1), i);}
 
     private:
-        size_t n;
         long maxDeg;
+        size_t n;
         parlay::sequence<indexType> graph;
         
         
