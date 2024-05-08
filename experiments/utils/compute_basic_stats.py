@@ -148,7 +148,7 @@ map_stats = {
     # "davies_bouldin_score": compute_davies_bouldin_score,
 }
 
-def compute_stats(data, labels_true, dendrogram_file):
+def compute_stats(labels_true, dendrogram_file):
     total_stats = {
         "best": {stat:0 for stat in map_stats}
     }
