@@ -10,7 +10,7 @@ def read_dendrogram(input_file):
         merge_cost = [float(data[i]) for i in range(2*n, 3*n-1)]
     return n, parent, merge_cost
 
-def make_cuts(input_file, eps = 1):
+def make_cuts(input_file, eps = 0.1):
     # Read the dendrogram from the input file
     n, parent, merge_cost = read_dendrogram(input_file)
     uf = UnionFind(n)
@@ -36,3 +36,14 @@ def make_cuts(input_file, eps = 1):
         yield iter, labeling
         iter += 1
         threshold *= one_plus_eps
+
+def make_all_cuts(input_file):
+    # Read the dendrogram from the input file
+    n, parent, merge_cost = read_dendrogram(input_file)
+    uf = UnionFind(n)
+    seq = sorted([(parent[i],i) for i in range(2*n-1)])
+    for i in range(0,2*n-2,2):
+        uf.unite(seq[i][1], seq[i][0])
+        uf.unite(seq[i+1][1], seq[i+1][0])
+        labeling  = uf.get_labelling()
+        yield i//2, labeling

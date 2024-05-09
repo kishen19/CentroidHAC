@@ -1,6 +1,6 @@
 from sklearn import metrics
 
-from utils.cut_dendrogram import make_cuts
+from utils.cut_dendrogram import make_cuts, make_all_cuts
 
 
 def compute_ari_score(labels_true, labels_pred):
@@ -130,6 +130,7 @@ def compute_davies_bouldin_score(data, labels):
     return davies_bouldin_score
 
 # TODO: Implement the following functions
+# higra 
 def dendrogram_purity():
     pass
 
@@ -148,7 +149,7 @@ map_stats = {
     # "davies_bouldin_score": compute_davies_bouldin_score,
 }
 
-def compute_stats(labels_true, dendrogram_file):
+def compute_stats_log_cuts(labels_true, dendrogram_file):
     total_stats = {
         "best": {stat:0 for stat in map_stats}
     }
@@ -163,3 +164,23 @@ def compute_stats(labels_true, dendrogram_file):
         for stat in map_stats:
             total_stats["best"][stat] = max(total_stats["best"][stat], stats[stat])
     return total_stats
+
+def compute_stats_all_cuts(labels_true, dendrogram_file):
+    total_stats = {
+        "best": {stat:0 for stat in map_stats}
+    }
+    for cut, labels_pred in make_all_cuts(dendrogram_file):
+        stats = {}
+        for stat in map_stats:
+            # if stat in ["silhouette_score", "calinski_harabasz_score", "davies_bouldin_score"]:
+            #     stats[stat] = map_stats[stat](data, labels_pred)
+            # else:
+            stats[stat] = map_stats[stat](labels_true, labels_pred)
+        total_stats[cut] = stats
+        for stat in map_stats:
+            total_stats["best"][stat] = max(total_stats["best"][stat], stats[stat])
+    return total_stats
+
+if __name__ == "__main__":
+    gt = [0,0,0,0,1,1,1,1,2,2]
+    compute_stats_all_cuts(gt, "/ssd2/kishen/centroidHAC/test/2d_line_dend_0.1.txt")

@@ -1,6 +1,6 @@
 dt='float'
 base_path='/ssd2/kishen/centroidHAC/basic/'
-datasets=('iris' 'breast_cancer' 'california_housing' 'diabetes' 'digits' 'linnerud' 'wine')
+datasets=('iris' 'breast_cancer' 'digits' 'wine')
 
 for dataset in "${datasets[@]}"
 do

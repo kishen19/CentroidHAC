@@ -50,13 +50,13 @@ double CentroidHAC_Exact(PointRange &Points, char *DendFile = nullptr) {
       continue;
     } else{ // merge step
       auto new_dist = Points[u].distance(Points[v]);
-      if (new_dist == dist){ // If dist is actual distance between u and v
+      if (new_dist <= dist){ // If dist is actual distance between u and v
         w = NN.merge_clusters(u, v, Points, &uf);
         parent[rep[u]] = cur + n;
         parent[rep[v]] = cur + n;
         rep[w] = cur + n;
         merge_cost[cur] = new_dist;
-        total_dist += dist;
+        total_dist += new_dist;
         cur++;
       } else{ // Otherwise, go to next pair
         w = u;
