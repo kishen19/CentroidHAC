@@ -1,6 +1,7 @@
 from sklearn import metrics
 from tqdm import tqdm as tqdm
 import higra as hg
+import numpy as np
 
 from utils.cut_dendrogram import make_cuts, make_all_cuts, read_dendrogram
 
@@ -90,12 +91,12 @@ def compute_fowlkes_mallows_score(labels_true, labels_pred):
     return fowlkes_mallows_score
 
 def dendrogram_purity(dend,labels_true):
-    tree = hg.Tree(dend)
+    tree = hg.Tree(np.asarray(dend))
     return hg.dendrogram_purity(tree, labels_true)
 
 def dasgupta_cost(dend,data):
+    tree = hg.Tree(np.asarray(dend))
     graph,edge_weights = hg.make_graph_from_points(data,graph_type="complete")
-    tree = hg.Tree(dend)
     return hg.dasgupta_cost(tree,edge_weights,graph,mode="similarity")
 
 map_stats = {
@@ -141,8 +142,8 @@ def compute_stats_all_cuts(data, labels_true, dendrogram_file):
         total_stats[cut] = stats
         for stat in map_stats:
             total_stats["best"][stat] = max(total_stats["best"][stat], stats[stat])
-    dp = dendrogram_purity(read_dendrogram(dendrogram_file), labels_true)
-    dg = dasgupta_cost(read_dendrogram(dendrogram_file), data)
+    dp = dendrogram_purity(read_dendrogram(dendrogram_file)[1], labels_true)
+    dg = dasgupta_cost(read_dendrogram(dendrogram_file)[1], data)
     total_stats["best"]["dendrogram_purity"] = dp
     total_stats["best"]["dasgupta_cost"] = dg
     return total_stats

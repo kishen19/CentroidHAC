@@ -3,14 +3,14 @@ import sys, json
 from utils.compute_stats import compute_stats_log_cuts, compute_stats_all_cuts
 from data_utils.get_datasets import *
 
-BASE_PATH = "/ssd2/kishen/centroidHAC/"
+# BASE_PATH = "/ssd2/kishen/centroidHAC/"
+BASE_PATH = "/home/kishen/CentroidHAC/data1/"
 
 basic_datasets = {
     "iris": get_iris_dataset,
     "digits": get_digits_dataset,
     "wine": get_wine_dataset,
     "breast_cancer": get_breast_cancer_dataset,
-    "covtype": get_covtype_dataset,
     "faces": get_faces_dataset,
 }
 

@@ -5,7 +5,8 @@ R=32
 L=64
 a=1.2
 dt='float'
-base_path=/ssd2/kishen/centroidHAC/${dataset}/
+# base_path=/ssd2/kishen/centroidHAC/${dataset}/
+base_path=/home/kishen/CentroidHAC/data1/${dataset}/
 
 if [ $build_index -eq 1 ]
 then

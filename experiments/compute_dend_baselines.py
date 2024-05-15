@@ -3,9 +3,10 @@ import numpy as np
 from tqdm import tqdm as tqdm
 
 from baselines.exact_baselines import sklearn_HAC, fastcluster_HAC
-from data_utils.get_datasets import get_iris_dataset, get_digits_dataset, get_wine_dataset, get_breast_cancer_dataset
+from data_utils.get_datasets import get_iris_dataset, get_digits_dataset, get_wine_dataset, get_breast_cancer_dataset, get_faces_dataset
 
-BASE_PATH = "/ssd2/kishen/centroidHAC/"
+# BASE_PATH = "/ssd2/kishen/centroidHAC/"
+BASE_PATH = "/home/kishen/CentroidHAC/data1/"
 
 library_map = {
     "sklearn": sklearn_HAC,
@@ -19,6 +20,7 @@ basic_datasets = {
     "digits": get_digits_dataset,
     "wine": get_wine_dataset,
     "breast_cancer": get_breast_cancer_dataset,
+    "faces": get_faces_dataset
 }
 
 def compute_dend_basic():
@@ -26,11 +28,11 @@ def compute_dend_basic():
         data, _ = basic_datasets[dataset](False)
         for linkage in fastcluster_linkage:
             start = time.time()
-            fastcluster_HAC(data, linkage, f"/ssd2/kishen/centroidHAC/basic/{dataset}/{dataset}_dend_fastcluster_{linkage}.txt")
+            fastcluster_HAC(data, linkage, BASE_PATH+f"basic/{dataset}/{dataset}_dend_fastcluster_{linkage}.txt")
             print(f"Time taken for {dataset} (fastcluster {linkage}): {time.time()-start}")
         for linkage in sklearn_linkage:
             start = time.time()
-            sklearn_HAC(data, linkage, f"/ssd2/kishen/centroidHAC/basic/{dataset}/{dataset}_dend_sklearn_{linkage}.txt")
+            sklearn_HAC(data, linkage, BASE_PATH+f"basic/{dataset}/{dataset}_dend_sklearn_{linkage}.txt")
             print(f"Time taken for {dataset} (sklearn {linkage}): {time.time()-start}")
 
 def compute_dend_general():
