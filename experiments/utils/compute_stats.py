@@ -2,6 +2,7 @@ from sklearn import metrics
 from tqdm import tqdm as tqdm
 import higra as hg
 import numpy as np
+import time
 
 from utils.cut_dendrogram import make_cuts, make_all_cuts, read_dendrogram
 
@@ -122,8 +123,13 @@ def compute_stats_log_cuts(data, labels_true, dendrogram_file):
         total_stats[cut] = stats
         for stat in map_stats:
             total_stats["best"][stat] = max(total_stats["best"][stat], stats[stat])
-    dp = dendrogram_purity(read_dendrogram(dendrogram_file), labels_true)
-    dg = dasgupta_cost(read_dendrogram(dendrogram_file), data)
+    st = time.time()
+    dp = dendrogram_purity(read_dendrogram(dendrogram_file)[1], labels_true)
+    ed1 = time.time()
+    print("DP time: ", ed1-st)
+    dg = dasgupta_cost(read_dendrogram(dendrogram_file)[1], data)
+    ed2 = time.time()
+    print("DG time: ", ed2-ed1)
     total_stats["best"]["dendrogram_purity"] = dp
     total_stats["best"]["dasgupta_cost"] = dg
     return total_stats

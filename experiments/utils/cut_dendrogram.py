@@ -17,10 +17,10 @@ def make_cuts(input_file, eps = 0.1):
     one_plus_eps = 1 + eps
     threshold = 1e-12
     visited = [0]*(n-1)
+    visited[-1]=1
     q = deque([i for i in range(n)])
     iter = 0
     rem = 2*n-2
-    print(n,rem,threshold)
     while rem > 0:
         new_q = deque()
         while q and rem>0:
@@ -28,7 +28,7 @@ def make_cuts(input_file, eps = 0.1):
             if merge_cost[parent[i]-n] <= threshold:
                 uf.unite(i, parent[i])
                 rem-=1
-                if not visited[parent[i]-n]:
+                if not visited[parent[i]-n]: # root never added to q
                     visited[parent[i]-n]=1
                     q.append(parent[i])
             else:
@@ -38,7 +38,6 @@ def make_cuts(input_file, eps = 0.1):
         yield iter, labeling
         iter += 1
         threshold *= one_plus_eps
-        print(rem, threshold)
 
 def make_all_cuts(input_file):
     # Read the dendrogram from the input file
