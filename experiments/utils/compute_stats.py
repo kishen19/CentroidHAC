@@ -1,6 +1,8 @@
 from sklearn import metrics
+from tqdm import tqdm as tqdm
+import higra as hg
 
-from utils.cut_dendrogram import make_cuts, make_all_cuts
+from utils.cut_dendrogram import make_cuts, make_all_cuts, read_dendrogram
 
 
 def compute_ari_score(labels_true, labels_pred):
@@ -87,55 +89,14 @@ def compute_fowlkes_mallows_score(labels_true, labels_pred):
     fowlkes_mallows_score = metrics.fowlkes_mallows_score(labels_true, labels_pred)
     return fowlkes_mallows_score
 
-def compute_silhouette_score(data, labels):
-    """
-    Compute the Silhouette score.
-    
-    Parameters:
-    - data: data points
-    - labels: cluster labels of the data points
-    
-    Returns:
-    - silhouette_score: the Silhouette score
-    """
-    silhouette_score = metrics.silhouette_score(data, labels)
-    return silhouette_score
+def dendrogram_purity(dend,labels_true):
+    tree = hg.Tree(dend)
+    return hg.dendrogram_purity(tree, labels_true)
 
-def compute_calinski_harabasz_score(data, labels):
-    """
-    Compute the Calinski-Harabasz score.
-    
-    Parameters:
-    - data: data points
-    - labels: cluster labels of the data points
-    
-    Returns:
-    - calinski_harabasz_score: the Calinski-Harabasz score
-    """
-    calinski_harabasz_score = metrics.calinski_harabasz_score(data, labels)
-    return calinski_harabasz_score
-
-def compute_davies_bouldin_score(data, labels):
-    """
-    Compute the Davies-Bouldin score.
-    
-    Parameters:
-    - data: data points
-    - labels: cluster labels of the data points
-    
-    Returns:
-    - davies_bouldin_score: the Davies-Bouldin score
-    """
-    davies_bouldin_score = metrics.davies_bouldin_score(data, labels)
-    return davies_bouldin_score
-
-# TODO: Implement the following functions
-# higra 
-def dendrogram_purity():
-    pass
-
-def dasgupta_cost():
-    pass
+def dasgupta_cost(dend,data):
+    graph,edge_weights = hg.make_graph_from_points(data,graph_type="complete")
+    tree = hg.Tree(dend)
+    return hg.dasgupta_cost(tree,edge_weights,graph,mode="similarity")
 
 map_stats = {
     "ari_score": compute_ari_score,
@@ -144,16 +105,13 @@ map_stats = {
     "homogeneity_score": compute_homogeneity_score,
     "v_measure_score": compute_v_measure_score,
     "fowlkes_mallows_score": compute_fowlkes_mallows_score,
-    # "silhouette_score": compute_silhouette_score,
-    # "calinski_harabasz_score": compute_calinski_harabasz_score,
-    # "davies_bouldin_score": compute_davies_bouldin_score,
 }
 
-def compute_stats_log_cuts(labels_true, dendrogram_file):
+def compute_stats_log_cuts(data, labels_true, dendrogram_file):
     total_stats = {
         "best": {stat:0 for stat in map_stats}
     }
-    for cut, labels_pred in make_cuts(dendrogram_file):
+    for cut, labels_pred in tqdm(make_cuts(dendrogram_file)):
         stats = {}
         for stat in map_stats:
             # if stat in ["silhouette_score", "calinski_harabasz_score", "davies_bouldin_score"]:
@@ -163,9 +121,13 @@ def compute_stats_log_cuts(labels_true, dendrogram_file):
         total_stats[cut] = stats
         for stat in map_stats:
             total_stats["best"][stat] = max(total_stats["best"][stat], stats[stat])
+    dp = dendrogram_purity(read_dendrogram(dendrogram_file), labels_true)
+    dg = dasgupta_cost(read_dendrogram(dendrogram_file), data)
+    total_stats["best"]["dendrogram_purity"] = dp
+    total_stats["best"]["dasgupta_cost"] = dg
     return total_stats
 
-def compute_stats_all_cuts(labels_true, dendrogram_file):
+def compute_stats_all_cuts(data, labels_true, dendrogram_file):
     total_stats = {
         "best": {stat:0 for stat in map_stats}
     }
@@ -179,6 +141,10 @@ def compute_stats_all_cuts(labels_true, dendrogram_file):
         total_stats[cut] = stats
         for stat in map_stats:
             total_stats["best"][stat] = max(total_stats["best"][stat], stats[stat])
+    dp = dendrogram_purity(read_dendrogram(dendrogram_file), labels_true)
+    dg = dasgupta_cost(read_dendrogram(dendrogram_file), data)
+    total_stats["best"]["dendrogram_purity"] = dp
+    total_stats["best"]["dasgupta_cost"] = dg
     return total_stats
 
 if __name__ == "__main__":

@@ -56,5 +56,5 @@ for root, dirs, files in os.walk(args.dataset_path):
 embeddings = np.vstack(embeddings)
 _, labels = np.unique(labels, return_inverse=True)
 
-np.savetxt(output_embeddings_path, embeddings, delimiter=" ", header="%i %i"%(embeddings.shape[0],embeddings.shape[1]), comments='')
+np.savetxt(output_embeddings_path, embeddings)
 np.savetxt(output_labels_path, labels)

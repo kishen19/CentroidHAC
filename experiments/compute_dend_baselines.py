@@ -1,5 +1,6 @@
 import sys, time
 import numpy as np
+from tqdm import tqdm as tqdm
 
 from baselines.exact_baselines import sklearn_HAC, fastcluster_HAC
 from data_utils.get_datasets import get_iris_dataset, get_digits_dataset, get_wine_dataset, get_breast_cancer_dataset
@@ -42,7 +43,7 @@ def compute_dend_general():
     with open(dataFile, "r") as f:
         data = f.readlines()
         data = np.asarray([data[i].split() for i in range(1,len(data))],dtype=float)
-    for linkage in linkages:
+    for linkage in tqdm(linkages):
         dendFile = BASE_PATH + f"{dataset}/{dataset}_dend_{library}_{linkage}.txt"
         start = time.time()
         print(f"Computing Dendrogram for {dataset} ({library} {linkage})")

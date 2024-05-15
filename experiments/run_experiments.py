@@ -10,6 +10,8 @@ basic_datasets = {
     "digits": get_digits_dataset,
     "wine": get_wine_dataset,
     "breast_cancer": get_breast_cancer_dataset,
+    "covtype": get_covtype_dataset,
+    "faces": get_faces_dataset,
 }
 
 sklearn_linkage = ["ward", "complete", "average", "single"]
@@ -22,7 +24,7 @@ def run_basic_stats(map_dends, saveFile = ""):
         # Fetch the data and ground truth labeling
         data, gt = basic_datasets[dataset](False)
         # Compute the cuts
-        stats = compute_stats_all_cuts(gt, map_dends[dataset])
+        stats = compute_stats_all_cuts(data, gt, map_dends[dataset])
         stats["Num Classes"] = len(set(gt))
         stats["Shape"] = data.shape
         overall_stats[dataset] = stats
@@ -32,11 +34,13 @@ def run_basic_stats(map_dends, saveFile = ""):
         print(overall_stats)
     
 # Given Dendrogram and Ground Truth, compute stats
-def run_general_stats(dendrogramFile, gtFile, saveFile = ""):
+def run_general_stats(dendrogramFile, dataFile, gtFile, saveFile = ""):
+    with open(dataFile, "r") as f:
+        data = np.array([[float(i) for i in line.strip().split()] for line in f.readlines()][1:])
     with open(gtFile, "r") as f:
         gt = np.asarray([int(i) for i in f.readlines()])
     # Compute the cuts
-    stats = compute_stats_log_cuts(gt, dendrogramFile)
+    stats = compute_stats_log_cuts(data, gt, dendrogramFile)
     stats["Num Classes"] = len(set(gt))
     stats["Size"] = len(gt)
     if saveFile:
@@ -85,8 +89,9 @@ def general_stats():
         params.append(sys.argv[3])
         dendrogramFile = BASE_PATH+f"{dataset}/{dataset}_dend_fastcluster_{sys.argv[3]}.txt"
     gtFile = BASE_PATH+f"{dataset}/{dataset}.gt"
+    dataFile = BASE_PATH+f"{dataset}/{dataset}.txt"
     saveFile = BASE_PATH+f"{dataset}/stats_{'_'.join(params)}.json"
-    run_general_stats(dendrogramFile, gtFile, saveFile)
+    run_general_stats(dendrogramFile, dataFile, gtFile, saveFile)
 
 if __name__ == "__main__":
     if sys.argv[1] == "basic":

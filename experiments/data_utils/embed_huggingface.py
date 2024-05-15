@@ -76,7 +76,7 @@ def embed(dataset_name):
 
     dataset_dir = f"{data_dir}/{metadata.short_name}"
     Path(dataset_dir).mkdir(parents=True, exist_ok=True)
-    np.savetxt(f"{dataset_dir}/{metadata.short_name}.txt", embeddings_np, delimiter=" ", header="%i %i"%(embeddings_np.shape[0],embeddings_np.shape[1]), comments='')
+    np.savetxt(f"{dataset_dir}/{metadata.short_name}.txt", embeddings_np)
     with open(f"{dataset_dir}/{metadata.short_name}.gt", "w") as f:
         for g in ground_truths:
             f.write(f"{g} \n")

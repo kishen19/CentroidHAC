@@ -36,35 +36,29 @@ def get_breast_cancer_dataset(save = True):
         np.savetxt(base_path + "breast_cancer/breast_cancer.gt", labels, fmt="%i")
     return data, labels
 
-def get_california_housing_dataset(save = True):
-    california_housing = datasets.fetch_california_housing()
-    data, labels = california_housing.data, california_housing.target
+def get_covtype_dataset(save = True):
+    covtype = datasets.fetch_covtype()
+    data, labels = covtype.data, covtype.target
     if save:
-        np.savetxt(base_path + "california_housing/california_housing.txt", data, fmt="%.5f", delimiter=" ", header = "%i %i"%(data.shape[0],data.shape[1]),comments='')
-        np.savetxt(base_path + "california_housing/california_housing.gt", labels, fmt="%.5f")
+        np.savetxt(base_path + "covtype/covtype.txt", data, fmt="%.5f", delimiter=" ", header = "%i %i"%(data.shape[0],data.shape[1]),comments='')
+        np.savetxt(base_path + "covtype/covtype.gt", labels, fmt="%i")
     return data, labels
 
-def get_diabetes_dataset(save = True):
-    diabetes = datasets.load_diabetes()
-    data, labels = diabetes.data, diabetes.target
+def get_faces_dataset(save = True):
+    faces = datasets.fetch_olivetti_faces()
+    data, labels = faces.data, faces.target
     if save:
-        np.savetxt(base_path + "diabetes/diabetes.txt", data, fmt="%.5f", delimiter=" ", header = "%i %i"%(data.shape[0],data.shape[1]),comments='')
-        np.savetxt(base_path + "diabetes/diabetes.gt", labels, fmt="%.5f")
-    return data, labels
-
-def get_linnerud_dataset(save = True):
-    linnerud = datasets.load_linnerud()
-    data, labels = linnerud.data, linnerud.target
-    if save:
-        np.savetxt(base_path + "linnerud/linnerud.txt", data, fmt="%.5f", delimiter=" ", header = "%i %i"%(data.shape[0],data.shape[1]),comments='')
-        np.savetxt(base_path + "linnerud/linnerud.gt", labels, fmt="%.5f")
+        np.savetxt(base_path + "faces/faces.txt", data, fmt="%.5f", delimiter=" ", header = "%i %i"%(data.shape[0],data.shape[1]),comments='')
+        np.savetxt(base_path + "faces/faces.gt", labels, fmt="%i")
     return data, labels
 
 if __name__ == "__main__":
-    get_iris_dataset()
-    get_digits_dataset()
-    get_wine_dataset()
-    get_breast_cancer_dataset()
-    get_california_housing_dataset()
-    get_diabetes_dataset()
-    get_linnerud_dataset()
+    # get_iris_dataset()
+    # get_digits_dataset()
+    # get_wine_dataset()
+    # get_breast_cancer_dataset()
+    # get_california_housing_dataset()
+    # get_diabetes_dataset()
+    # get_linnerud_dataset()
+    get_covtype_dataset()
+    get_faces_dataset()

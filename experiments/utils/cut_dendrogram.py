@@ -14,18 +14,20 @@ def make_cuts(input_file, eps = 0.1):
     # Read the dendrogram from the input file
     n, parent, merge_cost = read_dendrogram(input_file)
     uf = UnionFind(n)
-    max_distance = merge_cost[-1]
     one_plus_eps = 1 + eps
-    threshold = 1e-5
+    threshold = 1e-12
     visited = [0]*(n-1)
     q = deque([i for i in range(n)])
     iter = 0
-    while threshold <= max_distance:
+    rem = 2*n-2
+    print(n,rem,threshold)
+    while rem > 0:
         new_q = deque()
-        while q:
+        while q and rem>0:
             i = q.popleft()
             if merge_cost[parent[i]-n] <= threshold:
                 uf.unite(i, parent[i])
+                rem-=1
                 if not visited[parent[i]-n]:
                     visited[parent[i]-n]=1
                     q.append(parent[i])
@@ -36,6 +38,7 @@ def make_cuts(input_file, eps = 0.1):
         yield iter, labeling
         iter += 1
         threshold *= one_plus_eps
+        print(rem, threshold)
 
 def make_all_cuts(input_file):
     # Read the dendrogram from the input file
