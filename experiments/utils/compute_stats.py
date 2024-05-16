@@ -2,7 +2,7 @@ from sklearn import metrics
 from tqdm import tqdm as tqdm
 import higra as hg
 import numpy as np
-import time
+import time, sys
 
 from utils.cut_dendrogram import make_cuts, make_all_cuts, read_dendrogram
 
@@ -154,6 +154,17 @@ def compute_stats_all_cuts(data, labels_true, dendrogram_file):
     total_stats["best"]["dasgupta_cost"] = dg
     return total_stats
 
+def inversions_eps(dendrogram_file, eps = 0):
+    n, dend, merge_costs = read_dendrogram(dendrogram_file)
+    inv = 0
+    one_plus_eps = 1 + eps
+    for i in tqdm(range(n)):
+        j = dend[i]
+        while dend[j] != j:
+            if merge_costs[dend[i]-n] < merge_costs[dend[j]-n]/one_plus_eps:
+                inv += 1
+            j = dend[j]
+    return inv
+
 if __name__ == "__main__":
-    gt = [0,0,0,0,1,1,1,1,2,2]
-    compute_stats_all_cuts(gt, "/ssd2/kishen/centroidHAC/test/2d_line_dend_0.1.txt")
+    pass
