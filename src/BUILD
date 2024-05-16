@@ -17,6 +17,18 @@ cc_library(
 )
 
 cc_library(
+    name = "centroid_bucket",
+    hdrs = ["centroid_bucket.h"],
+    deps = [
+        "//src/vamana/utils:beamSearch",
+        "//src/vamana/utils:stats",
+        "//src/vamana/utils:types",
+        "//src/utils:graph",
+        "//src/utils:union_find",
+    ],
+)
+
+cc_library(
     name = "centroid_exact",
     hdrs = ["centroid_exact.h"],
     deps = [
@@ -37,6 +49,21 @@ cc_binary(
         "//src/utils:graph",
         "//src/utils:nn_types",
         ":centroid",
+    ],
+)
+
+cc_binary(
+    name = "centroid_bucket_main",
+    srcs = ["centroid_bucket.cc"],
+    deps = [
+        "@parlaylib//parlay:parallel",
+        "@parlaylib//parlay:primitives",
+        "//src/utils:parse_command_line",
+        "//src/utils:euclidean_point",
+        "//src/utils:point_range",
+        "//src/utils:graph",
+        "//src/utils:nn_types",
+        ":centroid_bucket",
     ],
 )
 
