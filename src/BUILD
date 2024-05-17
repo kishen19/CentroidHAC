@@ -13,6 +13,7 @@ cc_library(
         "//src/vamana/utils:types",
         "//src/utils:graph",
         "//src/utils:union_find",
+        "//src/utils:heap",
     ],
 )
 

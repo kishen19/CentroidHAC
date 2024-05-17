@@ -57,6 +57,15 @@ cc_library(
 # )
 
 cc_library(
+    name = "heap",
+    hdrs = ["heap.h"],
+    deps = [
+        "@parlaylib//parlay:parallel",
+        "@parlaylib//parlay:primitives",
+    ],
+)
+
+cc_library(
     name = "mips_point",
     hdrs = ["mips_point.h"],
     deps = [

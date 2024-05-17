@@ -8,6 +8,7 @@
 #include "utils/graph.h"
 #include "utils/union_find.h"
 #include "utils/nn_types.h"
+#include "utils/heap.h"
 
 /*
   Approximate CentroidHAC Implementation
@@ -28,6 +29,7 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
 
   /* Init */
   size_t n = Points.size();
+  size_t num_searches = 0;
   // Representative of the cluster containing i
   // Initially, each point is its own representative
   auto rep = parlay::sequence<indexType>::from_function(n, [&](size_t i){return i;});
@@ -38,9 +40,12 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
   auto uf = union_find<indexType>(n);
   auto h = parlay::sequence<kv>::from_function(n,[&](size_t i){
     auto cur_best = NN.nearest_neighbor(i, Points, &uf);
+    num_searches++;
     return std::make_tuple(cur_best.second,i,cur_best.first);
   });
   std::priority_queue<kv, std::vector<kv>, std::greater<kv>> H(h.begin(), h.end());
+  // pairing_heap::heap<kv> H;
+  // H.init(parlay::make_slice(h));
   t.next("Init Done");
 
   /* CentroidHAC Process */
@@ -85,6 +90,7 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
       }
       if (cur < n-1){
         std::pair<indexType,distanceType> closest_to_w = NN.nearest_neighbor(w, Points, &uf);
+        num_searches++;
         H.push(std::make_tuple(closest_to_w.second, w, closest_to_w.first));
       }
     }
@@ -92,6 +98,7 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
   t.next("Centroid Done");
   double total_time = t.total_time();
   std::cout << std::fixed << "Total Cost: " << total_dist << std::endl;
+  std::cout << "Number of Searches: " << num_searches << std::endl;
   /* Write Dendrogram to File */
   if (DendFile){
     std::ofstream dendrogram_file;

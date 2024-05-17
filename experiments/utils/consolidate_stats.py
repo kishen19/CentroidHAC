@@ -1,7 +1,7 @@
 import json
 
-# BASE_PATH = "/ssd2/kishen/centroidHAC/basic/"
-BASE_PATH = "/home/kishen/CentroidHAC/data1/basic/"
+BASE_PATH = "/ssd2/kishen/centroidHAC/"
+# BASE_PATH = "/home/kishen/CentroidHAC/data1/"
 
 basic_datasets = [
     "iris",
@@ -20,13 +20,16 @@ algs = ["centroid_%.2f"%i for i in eps2] +["centroid_%.1f"%i for i in eps1]+["ce
 output = {dataset:{} for dataset in basic_datasets}
 
 for alg in algs:
-    stats = json.load(open(BASE_PATH + f"stats_{alg}.json"))
+    stats = json.load(open(BASE_PATH + f"basic/stats_{alg}.json"))
     for dataset in basic_datasets:
         for stat in stats[dataset]["best"]:
             if stat in output[dataset]:
                 output[dataset][stat].append((alg,stats[dataset]["best"][stat]))
             else:
                 output[dataset][stat] = [(alg,stats[dataset]["best"][stat])]
+
+for dataset in basic_datasets:
+    json.dump(output[dataset], open(BASE_PATH+f"basic/{dataset}/{dataset}_stats.json","w"), indent=2)
 
 for dataset in basic_datasets:
     print(dataset)

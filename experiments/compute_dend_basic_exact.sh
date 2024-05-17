@@ -6,5 +6,5 @@ datasets=('iris' 'wine' 'breast_cancer' 'digits' 'faces')
 for dataset in "${datasets[@]}"
 do
     echo "Running for ${dataset}"
-    bazel run //src:centroid_exact_main -- -data_type $dt -base_path ${base_path}${dataset}/${dataset}.txt -test -dendrogram_outfile ${base_path}${dataset}/${dataset}_dend_exact.txt -rounds 3
+    bazel run //src:centroid_exact_main -- -data_type $dt -base_path ${base_path}${dataset}/${dataset}.txt -test -dendrogram_outfile ${base_path}${dataset}/dend/${dataset}_dend_centroid_exact.txt
 done

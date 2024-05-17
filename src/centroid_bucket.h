@@ -43,12 +43,14 @@ double CentroidHAC_Bucket(PointRange &Points, nn_type &NN,
   distanceType dist, total_dist = 0;
   size_t cur = 0;
   double one_plus_eps = 1+eps;
+  size_t num_searches = 0;
 
   auto h = parlay::sequence<kv>::from_function(n,[&](indexType i){
     if (uf.find_compress(i) != i){
       return std::make_tuple(std::numeric_limits<distanceType>::max(),i,i);
     } // Ignore non-centroids (non-representatives)
     auto cur_best = NN.nearest_neighbor(i, Points, &uf);
+    num_searches++;
     return std::make_tuple(cur_best.second,i,cur_best.first);
   });
   auto threshold = std::get<0>(parlay::reduce(h, parlay::minm<kv>()))*one_plus_eps;
@@ -59,6 +61,7 @@ double CentroidHAC_Bucket(PointRange &Points, nn_type &NN,
 
   auto repeated_merge = [&](indexType u_){
     std::pair<indexType,distanceType> cur_best = NN.nearest_neighbor(u_, Points, &uf);
+    num_searches++;
     while (cur < n-1 && cur_best.second <= threshold){
       auto w_ = NN.merge_clusters(u_, cur_best.first, Points, &uf);
       parent[rep[u_]] = cur + n;
@@ -70,6 +73,7 @@ double CentroidHAC_Bucket(PointRange &Points, nn_type &NN,
       u_ = w_;
       if (cur < n-1) {
         cur_best = NN.nearest_neighbor(u_, Points, &uf);
+        num_searches++;
       }
     }
   };
@@ -99,6 +103,7 @@ double CentroidHAC_Bucket(PointRange &Points, nn_type &NN,
           if (cur < n-1) repeated_merge(w);
         } else { // Search nearest point to u, say v', and check if d(u,v') is still within threshold
           std::pair<indexType,distanceType> cur_best = NN.nearest_neighbor(u, Points, &uf);
+          num_searches++;
           if (cur_best.second <= threshold){
             w = NN.merge_clusters(u, cur_best.first, Points, &uf);
             parent[rep[u]] = cur + n;
@@ -121,8 +126,12 @@ double CentroidHAC_Bucket(PointRange &Points, nn_type &NN,
         return std::make_tuple(std::numeric_limits<distanceType>::max(),i,i);
       } // Ignore non-centroids (non-representatives)
       auto cur_best = NN.nearest_neighbor(i, Points, &uf);
+      num_searches++;
       return std::make_tuple(cur_best.second,i,cur_best.first);
     });
+    if (threshold == 0){
+      threshold = std::get<0>(parlay::reduce(h, parlay::minm<kv>()))*one_plus_eps;
+    }
     bucket = parlay::filter(h, [&](kv x){
       return std::get<0>(x) <= threshold;
     });
@@ -133,6 +142,7 @@ double CentroidHAC_Bucket(PointRange &Points, nn_type &NN,
   double total_time = t.total_time();
   std::cout << std::fixed << "Total Cost: " << total_dist << std::endl;
   std::cout << std::fixed << "Iterations: " << iter << std::endl;
+  std::cout << "Number of Searches: " << num_searches << std::endl;
   /* Write Dendrogram to File */
   if (DendFile){
     std::ofstream dendrogram_file;
