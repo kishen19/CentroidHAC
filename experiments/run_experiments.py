@@ -3,8 +3,8 @@ import sys, json
 from utils.compute_stats import compute_stats_log_cuts, compute_stats_all_cuts, inversions_eps
 from data_utils.get_datasets import *
 
-BASE_PATH = "/ssd2/kishen/centroidHAC/"
-# BASE_PATH = "/home/kishen/CentroidHAC/data1/"
+# BASE_PATH = "/ssd2/kishen/centroidHAC/"
+BASE_PATH = "/home/kishen/CentroidHAC/data1/"
 
 basic_datasets = {
     "iris": get_iris_dataset,
@@ -51,71 +51,44 @@ def run_general_stats(dendrogramFile, dataFile, gtFile, saveFile = ""):
 # Computes the dendrogram paths for the basic datasets
 # given method (and other relevent params)
 def compute_dend_map(params):
-    if params[0] == "centroid":
-        map_dends = { dataset: BASE_PATH+f"basic/{dataset}/{dataset}_dend_{params[1]}.txt" for dataset in basic_datasets}
-        return map_dends
-    elif params[0] == "centroid_exact":
-        map_dends = { dataset: BASE_PATH+f"basic/{dataset}/{dataset}_dend_exact.txt" for dataset in basic_datasets}
-        return map_dends
-    elif params[0] == "sklearn":
-        map_dends = { dataset: BASE_PATH+f"basic/{dataset}/{dataset}_dend_sklearn_{params[1]}.txt" for dataset in basic_datasets}
-        return map_dends
-    elif params[0] == "fastcluster":
-        map_dends = { dataset: BASE_PATH+f"basic/{dataset}/{dataset}_dend_fastcluster_{params[1]}.txt" for dataset in basic_datasets}
-        return map_dends
-    else:
-        sys.exit(1)
-
+    map_dends = {dataset: BASE_PATH+f"basic/{dataset}/dend/{dataset}_dend_{params[0]}_{params[1]}.txt" for dataset in basic_datasets}
+    return map_dends
+    
 # Compute stats for all basic datasets
 def basic_stats():
-    params = [sys.argv[2]]
-    if params[0] in ["centroid", "sklearn", "fastcluster"]:
-        params.append(sys.argv[3])
-    save_file = BASE_PATH+"basic/stats_%s.json"%('_'.join([str(i) for i in params]))
+    params = [sys.argv[2], sys.argv[3]]
+    save_file = BASE_PATH+"basic/stats/stats_%s.json"%('_'.join([str(i) for i in params]))
     run_basic_stats(compute_dend_map(params), save_file)
 
 def general_stats():
     dataset = sys.argv[1]
-    params = [sys.argv[2]]
-    if sys.argv[2] == "centroid":
-        params.append(sys.argv[3])
-        dendrogramFile = BASE_PATH+f"{dataset}/{dataset}_dend_{sys.argv[3]}.txt"
-    elif sys.argv[2] == "centroid_exact":
-        dendrogramFile = BASE_PATH+f"{dataset}/{dataset}_dend_exact.txt"
-    elif sys.argv[2] == "sklearn":
-        params.append(sys.argv[3])
-        dendrogramFile = BASE_PATH+f"{dataset}/{dataset}_dend_sklearn_{sys.argv[3]}.txt"
-    elif sys.argv[2] == "fastcluster":
-        params.append(sys.argv[3])
-        dendrogramFile = BASE_PATH+f"{dataset}/{dataset}_dend_fastcluster_{sys.argv[3]}.txt"
+    params = [sys.argv[2], sys.argv[3]]
+    dendrogramFile = BASE_PATH+f"{dataset}/dend/{dataset}_dend_{params[0]}_{params[1]}.txt"
     gtFile = BASE_PATH+f"{dataset}/{dataset}.gt"
     dataFile = BASE_PATH+f"{dataset}/{dataset}.txt"
-    saveFile = BASE_PATH+f"{dataset}/stats_{'_'.join(params)}.json"
+    saveFile = BASE_PATH+f"{dataset}/stats/stats_{'_'.join(params)}.json"
     run_general_stats(dendrogramFile, dataFile, gtFile, saveFile)
 
-def compute_inversions_basic():
-    method = sys.argv[2]
-    param = sys.argv[3]
-    for dataset in basic_datasets:
-        if method == "centroid":
-            dendrogram_file = f"/ssd2/kishen/centroidHAC/{dataset}/{dataset}_dend_{param}.txt"
-        else:
-            dendrogram_file = f"/ssd2/kishen/centroidHAC/{dataset}/{dataset}_dend_{method}_{param}.txt"
-        for eps in [0,0.01,0.1,0.5,1]:
-            inv = inversions_eps(dendrogram_file, eps)
-            print(f"Dataset: {dataset}, Method: {method}, Param: {param}, Eps: {eps}, Inversions: {inv}")
+# def compute_inversions_basic():
+#     method = sys.argv[2]
+#     param = sys.argv[3]
+#     for dataset in basic_datasets:
+#         if method == "centroid":
+#             dendrogram_file = BASE_PATH+f"/ssd2/kishen/centroidHAC/{dataset}/{dataset}_dend_{param}.txt"
+#         else:
+#             dendrogram_file = f"/ssd2/kishen/centroidHAC/{dataset}/{dataset}_dend_{method}_{param}.txt"
+#         for eps in [0,0.01,0.1,0.5,1]:
+#             inv = inversions_eps(dendrogram_file, eps)
+#             print(f"Dataset: {dataset}, Method: {method}, Param: {param}, Eps: {eps}, Inversions: {inv}")
 
-def compute_inversions_general():
-    dataset = sys.argv[1]
-    method = sys.argv[2]
-    param = sys.argv[3]
-    if method == "centroid":
-        dendrogram_file = f"/ssd2/kishen/centroidHAC/{dataset}/{dataset}_dend_{param}.txt"
-    else:
-        dendrogram_file = f"/ssd2/kishen/centroidHAC/{dataset}/{dataset}_dend_{method}_{param}.txt"
-    for eps in [0,0.01,0.1,0.5,1]:
-        inv = inversions_eps(dendrogram_file, eps)
-        print(f"Dataset: {dataset}, Method: {method}, Param: {param}, Eps: {eps}, Inversions: {inv}")
+# def compute_inversions_general():
+#     dataset = sys.argv[1]
+#     method = sys.argv[2]
+#     param = sys.argv[3]
+#     dendrogram_file = BASE_PATH+f"{dataset}/dend/{dataset}_dend_{method}_{param}.txt"
+#     for eps in [0,0.01,0.1,0.5,1]:
+#         inv = inversions_eps(dendrogram_file, eps)
+#         print(f"Dataset: {dataset}, Method: {method}, Param: {param}, Eps: {eps}, Inversions: {inv}")
 
 if __name__ == "__main__":
     if sys.argv[1] == "basic":
