@@ -1,6 +1,7 @@
 import fastcluster
 from sklearn.cluster import AgglomerativeClustering as AC
 import numpy as np
+import time
 
 def write_dend(dendFile, parent, merge_cost):
     n = len(merge_cost)+1
@@ -12,7 +13,8 @@ def write_dend(dendFile, parent, merge_cost):
             f.write(f"{merge_cost[i]}\n")
 
 # Linkage: {single, complete, average, weighted, centroid, median, ward}
-def fastcluster_HAC(data, linkage, dendFile):
+def fastcluster_HAC(data, linkage, dendFile=""):
+    start=time.time()
     n = data.shape[0]
     dend = fastcluster.linkage(data, metric="euclidean", method=linkage)
     parent = [i for i in range(2*n-1)]
@@ -21,7 +23,8 @@ def fastcluster_HAC(data, linkage, dendFile):
         parent[int(dend[i][0])] = i+n
         parent[int(dend[i][1])] = i+n
         merge_cost[i] = dend[i][2]
-    write_dend(dendFile, parent, merge_cost)
+    if (dendFile):
+        write_dend(dendFile, parent, merge_cost)
 
 # Linkage: {ward, complete, average, single}
 def sklearn_HAC(data, linkage, dendFile):
@@ -34,7 +37,8 @@ def sklearn_HAC(data, linkage, dendFile):
         parent[children[i][0]] = n+i
         parent[children[i][1]] = n+i
     merge_cost = clusterer.distances_
-    write_dend(dendFile, parent, merge_cost)
+    if (dendFile):
+        write_dend(dendFile, parent, merge_cost)
 
 if __name__ == "__main__":
     datafile = input().strip()
