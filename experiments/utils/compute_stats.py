@@ -98,7 +98,7 @@ def dendrogram_purity(dend,labels_true):
 def dasgupta_cost(dend,data):
     tree = hg.Tree(np.asarray(dend))
     graph,edge_weights = hg.make_graph_from_points(data,graph_type="complete")
-    return hg.dasgupta_cost(tree,edge_weights,graph,mode="similarity")
+    return hg.dasgupta_cost(tree,edge_weights,graph,mode="dissimilarity")
 
 map_stats = {
     "ari_score": compute_ari_score,
@@ -166,5 +166,16 @@ def inversions_eps(dendrogram_file, eps = 0):
             j = dend[j]
     return inv
 
+def read_dendrogram(input_file):
+    with open(input_file, "r") as f:
+        data = f.readlines()
+        n = int(data[0])
+        parent = [int(data[i]) for i in range(1, 2*n)]
+        merge_cost = [float(data[i]) for i in range(2*n, 3*n-1)]
+    return n, parent, merge_cost
+
 if __name__ == "__main__":
-    pass
+    n,dend,merge_costs = read_dendrogram("/ssd2/kishen/centroidHAC/basic/digits/dend/digits_dend_sklearn_average.txt")
+    with open("/ssd2/kishen/centroidHAC/basic/digits/digits.txt", "r") as f:
+        data = np.array([[float(i) for i in line.strip().split()] for line in f.readlines()][1:])
+    print(dasgupta_cost(dend,data))
