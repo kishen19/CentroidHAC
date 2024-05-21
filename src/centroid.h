@@ -22,6 +22,7 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
   using kv = std::tuple<distanceType,indexType,indexType>; // Heap element type
   
   parlay::internal::timer t("Centroid HAC (Approx)");
+  parlay::internal::timer pt("Timer");
 
   /* Build Index */
   NN.init(Points, IndexFile);
@@ -29,7 +30,8 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
 
   /* Init */
   size_t n = Points.size();
-  size_t num_searches = 0;
+  size_t num_searches = 0, num_merges = 0, num_heap_ops = 0, uf_ops = 0, parallel_searches = 0;
+  double search_time = 0.0, merge_time = 0.0, heap_time = 0.0, uf_time = 0.0;
   // Representative of the cluster containing i
   // Initially, each point is its own representative
   auto rep = parlay::sequence<indexType>::from_function(n, [&](size_t i){return i;});
@@ -40,10 +42,12 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
   auto uf = union_find<indexType>(n);
   auto h = parlay::sequence<kv>::from_function(n,[&](size_t i){
     auto cur_best = NN.nearest_neighbor(i, Points, &uf);
-    num_searches++;
     return std::make_tuple(cur_best.second,i,cur_best.first);
   });
+  parallel_searches+=n;
+  pt.start();
   std::priority_queue<kv, std::vector<kv>, std::greater<kv>> H(h.begin(), h.end());
+  heap_time += pt.stop();
   // pairing_heap::heap<kv> H;
   // H.init(parlay::make_slice(h));
   t.next("Init Done");
@@ -57,17 +61,26 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
     if (cur % 10000 == 0){
       std::cout << "cur: " << cur << ", total_dist: " << total_dist << std::endl;
     }
+    pt.start();
     kv best = H.top(); H.pop();
+    heap_time += pt.stop();
+    num_heap_ops++;
     std::tie(dist, u_orig, v_orig) = best;
+    pt.start();
     u = uf.find_compress(u_orig); // Centroid of u
     v = uf.find_compress(v_orig); // Centroid of v
+    uf_time = pt.stop();
+    uf_ops++;
     if (u == v){ // u_orig & v_orig in same cluster already
       continue;
     } else {
       // recompute dist and check if within 1+eps (instead of beam_search)
       auto new_dist = Points[u].distance(Points[v]);
       if (new_dist <= one_plus_eps*dist){ // If d(u,v) is at most (1+eps)*d(u_orig,v_orig)<=(1+eps)*opt
+        pt.start();
         w = NN.merge_clusters(u, v, Points, &uf);
+        merge_time += pt.stop();
+        num_merges++;
         parent[rep[u]] = cur + n;
         parent[rep[v]] = cur + n;
         rep[w] = cur + n;
@@ -75,9 +88,15 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
         total_dist += new_dist; // TODO: deprecate after testing
         cur++;
       } else { // Search nearest point to u, say v', and check if d(u,v')<=(1+eps)*dist <= (1+eps)opt
+        pt.start();
         std::pair<indexType,distanceType> cur_best = NN.nearest_neighbor(u, Points, &uf);
+        search_time += pt.stop();
+        num_searches++;
         if (cur_best.second <= one_plus_eps*dist){
+          pt.start();
           w = NN.merge_clusters(u, cur_best.first, Points, &uf);
+          merge_time += pt.stop();
+          num_merges++;
           parent[rep[u]] = cur + n;
           parent[rep[cur_best.first]] = cur + n;
           rep[w] = cur + n;
@@ -89,7 +108,9 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
         }
       }
       if (cur < n-1){
+        pt.start();
         std::pair<indexType,distanceType> closest_to_w = NN.nearest_neighbor(w, Points, &uf);
+        search_time += pt.stop();
         num_searches++;
         H.push(std::make_tuple(closest_to_w.second, w, closest_to_w.first));
       }
@@ -99,6 +120,14 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
   double total_time = t.total_time();
   std::cout << std::fixed << "Total Cost: " << total_dist << std::endl;
   std::cout << "Number of Searches: " << num_searches << std::endl;
+  std::cout << "Number of Merges: " << num_merges << std::endl;
+  std::cout << "Number of Heap Operations: " << num_heap_ops << std::endl;
+  std::cout << "Number of UnionFind Operations: " << uf_ops << std::endl;
+  std::cout << "Number of Parallel Searches: " << parallel_searches << std::endl;
+  std::cout << "Search Time: " << search_time << std::endl;
+  std::cout << "Merge Time: " << merge_time << std::endl;
+  std::cout << "Heap Time: " << heap_time << std::endl;
+  std::cout << "UnionFind Time: " << uf_time << std::endl;
   /* Write Dendrogram to File */
   if (DendFile){
     std::ofstream dendrogram_file;
@@ -134,6 +163,7 @@ void CentroidHAC_errors(PointRange &Points, nn_type &NN,
   NN.init(Points, IndexFile);
   auto NNexact = nn_exact<PointRange, indexType>();
   t.next("Index Built");
+
 
   /* Init */
   size_t n = Points.size();

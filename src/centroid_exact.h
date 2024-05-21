@@ -46,9 +46,9 @@ double CentroidHAC_Exact(PointRange &Points, char *DendFile = nullptr) {
     u = uf.find_compress(u_orig); // Centroid of u
     v = uf.find_compress(v_orig); // Centroid of v
     // If either u_orig or v_orig is not active, continue
-    if ((u!=u_orig) || (v != v_orig)){ 
+    if (u!=u_orig || u==v){ 
       continue;
-    } else{ // merge step
+    } else { // merge step
       auto new_dist = Points[u].distance(Points[v]);
       if (new_dist <= dist){ // If dist is actual distance between u and v
         w = NN.merge_clusters(u, v, Points, &uf);
