@@ -30,7 +30,7 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
 
   /* Init */
   size_t n = Points.size();
-  size_t num_searches = 0, num_merges = 0, num_heap_ops = 0, uf_ops = 0, parallel_searches = 0;
+  size_t num_searches = 0, num_merges=0, num_missed_merges = 0, num_heap_ops = 0, uf_ops = 0, parallel_searches = 0;
   double search_time = 0.0, merge_time = 0.0, heap_time = 0.0, uf_time = 0.0;
   // Representative of the cluster containing i
   // Initially, each point is its own representative
@@ -104,6 +104,7 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
           total_dist += cur_best.second;
           cur++;
         } else{
+          num_missed_merges++;
           w = u;
         }
       }
@@ -121,6 +122,7 @@ double CentroidHAC(PointRange &Points, nn_type &NN,
   std::cout << std::fixed << "Total Cost: " << total_dist << std::endl;
   std::cout << "Number of Searches: " << num_searches << std::endl;
   std::cout << "Number of Merges: " << num_merges << std::endl;
+  std::cout << "Number of Missed Merges: " << num_missed_merges << std::endl;
   std::cout << "Number of Heap Operations: " << num_heap_ops << std::endl;
   std::cout << "Number of UnionFind Operations: " << uf_ops << std::endl;
   std::cout << "Number of Parallel Searches: " << parallel_searches << std::endl;

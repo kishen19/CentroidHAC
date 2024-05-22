@@ -119,6 +119,7 @@ struct nn_knn {
     });
     auto filtered_cand = parlay::filter(cand, [&](indexType x){return x != w;});
     auto new_nbhs = I->robustPrune(w, filtered_cand, G, Points, BP.alpha, false);
+    // TODO: don't always prune, may benefit to include everything if the set size <=R.
     G[w].update_neighbors(new_nbhs);
     return w;
   }

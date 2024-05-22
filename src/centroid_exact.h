@@ -36,7 +36,7 @@ double CentroidHAC_Exact(PointRange &Points, char *DendFile = nullptr) {
   /* CentroidHAC Process */
   indexType u, v, w, u_orig, v_orig;
   distanceType dist, total_dist = 0;
-  size_t cur = 0;
+  size_t cur = 0, num_missed_merges = 0, num_merges = 0;
   while (cur < n-1){
     if (cur % 10000 == 0){
       std::cout << "cur: " << cur << ", total_dist: " << total_dist << std::endl;
@@ -46,12 +46,16 @@ double CentroidHAC_Exact(PointRange &Points, char *DendFile = nullptr) {
     u = uf.find_compress(u_orig); // Centroid of u
     v = uf.find_compress(v_orig); // Centroid of v
     // If either u_orig or v_orig is not active, continue
-    if (u!=u_orig || u==v){ 
+    if (u==v){
+      continue;
+    } else if (u!= u_orig){
+      num_missed_merges++;
       continue;
     } else { // merge step
       auto new_dist = Points[u].distance(Points[v]);
       if (new_dist <= dist){ // If dist is actual distance between u and v
         w = NN.merge_clusters(u, v, Points, &uf);
+        num_merges++;
         parent[rep[u]] = cur + n;
         parent[rep[v]] = cur + n;
         rep[w] = cur + n;
@@ -59,6 +63,7 @@ double CentroidHAC_Exact(PointRange &Points, char *DendFile = nullptr) {
         total_dist += new_dist;
         cur++;
       } else{ // Otherwise, go to next pair
+        num_missed_merges++;
         w = u;
       }
       if (cur < n-1){// Add the nearest neighbor of w to the heap
@@ -70,6 +75,9 @@ double CentroidHAC_Exact(PointRange &Points, char *DendFile = nullptr) {
   t.next("Centroid Done");
   double total_time = t.total_time();
   std::cout << std::fixed << "Total Cost: " << total_dist << std::endl;
+  std::cout << "Total Time: " << total_time << std::endl;
+  std::cout << "Num Missed Merges: " << num_missed_merges << std::endl;
+  std::cout << "Num Merges: " << num_merges << std::endl;
   /* Write Dendrogram to File */
   if (DendFile != nullptr){
     std::ofstream dendrogram_file;

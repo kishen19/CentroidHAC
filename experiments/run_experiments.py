@@ -40,7 +40,10 @@ def run_general_stats(dendrogramFile, dataFile, gtFile, saveFile = ""):
     with open(gtFile, "r") as f:
         gt = np.asarray([int(i) for i in f.readlines()])
     # Compute the cuts
-    stats = compute_stats_log_cuts(data, gt, dendrogramFile)
+    ignore_dg = False
+    if len(sys.argv)>4:
+        ignore_dg = int(sys.argv[4])
+    stats = compute_stats_log_cuts(data, gt, dendrogramFile, ignore_dg)
     stats["Num Classes"] = len(set(gt))
     stats["Size"] = len(gt)
     if saveFile:

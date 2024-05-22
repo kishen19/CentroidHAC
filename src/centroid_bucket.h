@@ -44,7 +44,7 @@ double CentroidHAC_Bucket(PointRange &Points, nn_type &NN,
   distanceType dist, total_dist = 0;
   size_t cur = 0;
   double one_plus_eps = 1+eps;
-  size_t num_searches = 0, num_merges = 0, uf_ops = 0, parallel_searches = 0;
+  size_t num_searches = 0, num_missed_merges=0, num_merges = 0, uf_ops = 0, parallel_searches = 0;
   double merge_time = 0.0, uf_time = 0.0, search_time = 0.0;
 
   auto h = parlay::sequence<kv>::from_function(n,[&](indexType i){
@@ -131,6 +131,7 @@ double CentroidHAC_Bucket(PointRange &Points, nn_type &NN,
             cur++;
             if (cur < n-1) repeated_merge(w);
           } else{
+            num_missed_merges++;
             continue;
           }
         }
@@ -145,15 +146,17 @@ double CentroidHAC_Bucket(PointRange &Points, nn_type &NN,
       auto cur_best = NN.nearest_neighbor(i, Points, &uf);
       return std::make_tuple(cur_best.second,i,cur_best.first);
     });
-    parallel_searches += parlay::count_if(h, [&](kv x){
+    auto par_searches = parlay::count_if(h, [&](kv x){
       return std::get<0>(x) != std::numeric_limits<distanceType>::max();
     });
+    parallel_searches+=par_searches;
     if (threshold == 0){
       threshold = std::get<0>(parlay::reduce(h, parlay::minm<kv>()))*one_plus_eps;
     }
     bucket = parlay::filter(h, [&](kv x){
       return std::get<0>(x) <= threshold;
     });
+    num_missed_merges += (par_searches - bucket.size());
     bucket_size = bucket.size();
     iter++;
   }
@@ -163,6 +166,7 @@ double CentroidHAC_Bucket(PointRange &Points, nn_type &NN,
   std::cout << std::fixed << "Iterations: " << iter << std::endl;
   std::cout << "Number of Searches: " << num_searches << std::endl;
   std::cout << "Number of Merges: " << num_merges << std::endl;
+  std::cout << "Number of Missed Merges: " << num_missed_merges << std::endl;
   std::cout << "UF Operations: " << uf_ops << std::endl;
   std::cout << "Parallel Searches: " << parallel_searches << std::endl;
   std::cout << "Search Time: " << search_time << std::endl;
