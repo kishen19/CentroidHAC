@@ -1,11 +1,11 @@
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
 
-#include "utils/parse_command_line.h"
-#include "utils/euclidean_point.h"
-#include "utils/point_range.h"
+#include "src/utils/parse_command_line.h"
+#include "src/utils/euclidean_point.h"
+#include "src/utils/point_range.h"
 
-#include "centroid_exact.h"
+#include "centroid.h"
 
 // *************************************************************
 //  TIMING

@@ -1,25 +1,3 @@
-// This code is part of the Problem Based Benchmark Suite (PBBS)
-// Copyright (c) 2011 Guy Blelloch and the PBBS team
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights (to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to
-// permit persons to whom the Software is furnished to do so, subject to
-// the following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include <iostream>
 #include <algorithm>
 #include <fcntl.h>
@@ -31,13 +9,13 @@
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
 
-#include "utils/parse_command_line.h"
-#include "utils/euclidean_point.h"
-#include "utils/point_range.h"
-#include "utils/graph.h"
-#include "utils/nn_types.h"
+#include "src/utils/parse_command_line.h"
+#include "src/utils/euclidean_point.h"
+#include "src/utils/point_range.h"
+#include "src/utils/graph.h"
+#include "src/utils/nn_types.h"
 
-#include "centroid_bucket.h"
+#include "centroid.h"
 
 // *************************************************************
 //  TIMING
@@ -56,10 +34,10 @@ void Centroid_main(parlay::sequence<char*> files, bool test, bool exact,
     Points = PointRange(files[0], test);
     if (exact){
       auto NN = nn_exact<PointRange, indexType>();
-      total_time += CentroidHAC_Bucket<PointRange, indexType, nn_exact<PointRange, indexType>>(Points, NN, eps, files[2], files[3]);
+      total_time += CentroidHAC<PointRange, indexType, nn_exact<PointRange, indexType>>(Points, NN, eps, files[2], files[3]);
     } else {
       auto NN = nn_knn<PointRange, indexType>(files[1], R, L, alpha, pass, Points.size());
-      total_time += CentroidHAC_Bucket<PointRange, indexType, nn_knn<PointRange, indexType>>(Points, NN, eps, files[2], files[3]);
+      total_time += CentroidHAC<PointRange, indexType, nn_knn<PointRange, indexType>>(Points, NN, eps, files[2], files[3]);
     }
   }
   std::cout << "# time per iter: " << total_time/rounds << std::endl;

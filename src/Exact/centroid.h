@@ -1,6 +1,6 @@
 #pragma once
-#include "utils/union_find.h"
-#include "utils/nn_types.h"
+#include "src/utils/union_find.h"
+#include "src/utils/nn_types.h"
 
 /* 
   Exact CentroidHAC Implementation

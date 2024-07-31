@@ -2,13 +2,13 @@
 #include <algorithm>
 #include <iomanip>
 
-#include "vamana/utils/beamSearch.h"
-#include "vamana/utils/stats.h"
-#include "vamana/utils/types.h"
-#include "utils/graph.h"
-#include "utils/union_find.h"
-#include "utils/nn_types.h"
-#include "utils/heap.h"
+#include "src/vamana/utils/beamSearch.h"
+#include "src/vamana/utils/stats.h"
+#include "src/vamana/utils/types.h"
+#include "src/utils/graph.h"
+#include "src/utils/union_find.h"
+#include "src/utils/nn_types.h"
+#include "src/utils/heap.h"
 
 /*
   Approximate CentroidHAC Implementation
